@@ -212,11 +212,32 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
       {'name': 'Momo Station', 'id': '#INV-981', 'amount': 'NPR 799.00', 'status': 'Pending'},
       {'name': 'Boudha Bakery', 'id': '#INV-980', 'amount': 'NPR 4,793.04', 'status': 'Paid'},
     ],
+    'app_configs_list': [
+      {'id': '1', 'name': 'Restaurant Name', 'value': 'Chiyalaa Global Hub', 'key': 'rest_name', 'icon': Icons.storefront_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '2', 'name': 'Official Address', 'value': 'Main Road, Butwal, Nepal', 'key': 'address', 'icon': Icons.location_on_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '3', 'name': 'Official Email', 'value': 'admin@chiyalaa.com', 'key': 'email', 'icon': Icons.email_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '4', 'name': 'Phone Number', 'value': '+977-98XXXXXXXX', 'key': 'phone', 'icon': Icons.phone_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '5', 'name': 'VAT / Tax (%)', 'value': '13', 'key': 'vat', 'icon': Icons.receipt_long_rounded, 'type': 'number', 'status': 'Active'},
+      {'id': '6', 'name': 'Service Charge (%)', 'value': '10', 'key': 'service_charge', 'icon': Icons.room_service_rounded, 'type': 'number', 'status': 'Active'},
+      {'id': '7', 'name': 'Auto KOT Print', 'value': true, 'key': 'print_kot_auto', 'icon': Icons.print_rounded, 'type': 'toggle', 'status': 'Active'},
+      {'id': '8', 'name': 'Opening Time', 'value': '09:00 AM', 'key': 'opening_time', 'icon': Icons.schedule_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '9', 'name': 'Closing Time', 'value': '11:00 PM', 'key': 'closing_time', 'icon': Icons.bedtime_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '10', 'name': 'Stock Threshold', 'value': '10', 'key': 'low_stock_threshold', 'icon': Icons.warning_amber_rounded, 'type': 'number', 'status': 'Active'},
+      {'id': '11', 'name': 'Paper Size', 'value': '80mm', 'key': 'thermal_paper_size', 'icon': Icons.description_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '12', 'name': 'Default Order Type', 'value': 'Dine-in', 'key': 'default_order_type', 'icon': Icons.restaurant_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '13', 'name': 'Decimal Places', 'value': '2', 'key': 'decimal_places', 'icon': Icons.exposure_zero_rounded, 'type': 'number', 'status': 'Active'},
+      {'id': '14', 'name': 'KDS Refresh Rate', 'value': '10s', 'key': 'kds_refresh', 'icon': Icons.sync_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '15', 'name': 'Invoice Footer', 'value': 'Thank you for your visit!', 'key': 'invoice_footer', 'icon': Icons.speaker_notes_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '16', 'name': 'Currency Symbol', 'value': 'Rs.', 'key': 'currency_symbol', 'icon': Icons.currency_rupee_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '17', 'name': 'Booking Buffer', 'value': '30 min', 'key': 'booking_buffer', 'icon': Icons.timer_rounded, 'type': 'text', 'status': 'Active'},
+    ],
   };
 
   String _locSearchQuery = "";
   String _invSearchQuery = ""; // New: Search for Inventory
+  String _commSearchQuery = ""; // New: Commission Search
   String _resetSearchQuery = "";
+  String _appSearchQuery = ""; // New: App Setting Search
   String _smsSearchQuery = ""; // New: SMS search
   String _smsTemplateSearchQuery = ""; // New: Template search
   String _locStatusFilter = "ALL";
@@ -226,6 +247,9 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
   String _smsTemplateStatusFilter = "All"; // All, Active, Inactive
   bool _smsTodayOnly = false; // New: Today filter
   int _displayCount = 10; // New: Display count for lists
+  String _langFilter = "TOTAL"; // For filtering language cards via stats cards
+  String _resetFilter = "TOTAL"; // For filtering factory reset actions via stats cards
+  String _appFilter = "TOTAL"; // For filtering app settings via stats cards
 
   void _updateConfig(String key, dynamic value) {
     setState(() => _configState[key] = value);
@@ -328,7 +352,7 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildResponsiveHeader(),
-          const SizedBox(height: 32),
+          if (widget.mode != "Language") const SizedBox(height: 32),
           if (widget.mode == "Application Setting") _buildApplicationSetting()
           else if (widget.mode == "App Setting") _buildAppSettingModule()
           else if (widget.mode == "Commission") _buildCommissionModule()
@@ -348,19 +372,30 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
   }
 
   Widget _buildResponsiveHeader() {
+    if (widget.mode == "Language") return const SizedBox.shrink();
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: AdminTheme.royalBlue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
-          child: const Icon(Icons.settings_suggest_rounded, color: AdminTheme.royalBlue, size: 28),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE2E8F0).withValues(alpha: 0.4), 
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: const Icon(Icons.settings_rounded, color: AdminTheme.royalBlue, size: 30),
         ),
-        const SizedBox(width: 20),
+        const SizedBox(width: 24),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.mode.startsWith("SMS") ? (widget.mode == "SMS Configuration" ? "SMS Hub" : "SMS Templates") : widget.mode, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
-            Text(widget.mode.startsWith("SMS") ? (widget.mode == "SMS Configuration" ? "Configure automated communication & logs" : "Manage reusable messages for customer notifications.") : "System Configuration Node • Professional Management", style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
+            Text(
+              widget.mode.startsWith("SMS") ? (widget.mode == "SMS Configuration" ? "SMS Hub" : "SMS Templates") : widget.mode, 
+              style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy, letterSpacing: -0.5)
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.mode.startsWith("SMS") ? (widget.mode == "SMS Configuration" ? "Configure automated communication & logs" : "Manage reusable messages for customer notifications.") : "System Configuration Node • Professional Management", 
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w600)
+            ),
           ],
         ),
       ],
@@ -369,56 +404,312 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
 
   // --- 1. APPLICATION SETTING ---
   Widget _buildApplicationSetting() {
+    final List allSettings = List.from(_configState['app_configs_list'] ?? []);
+    
+    // Stats calculation
+    final total = allSettings.length;
+    final active = allSettings.where((s) => s['status'] == 'Active').length;
+    final inactive = allSettings.where((s) => s['status'] != 'Active').length;
+    final toggles = allSettings.where((s) => s['type'] == 'toggle').length;
+
+    final filtered = allSettings.where((s) {
+      bool matchesSearch = s['name'].toString().toLowerCase().contains(_appSearchQuery.toLowerCase()) ||
+                           s['value'].toString().toLowerCase().contains(_appSearchQuery.toLowerCase());
+      bool matchesFilter = true;
+      if (_appFilter == "ACTIVE") matchesFilter = s['status'] == 'Active';
+      else if (_appFilter == "INACTIVE") matchesFilter = s['status'] != 'Active';
+      else if (_appFilter == "TOGGLES") matchesFilter = s['type'] == 'toggle';
+      
+      return matchesSearch && matchesFilter;
+    }).toList();
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Responsive Stats Row
+        Wrap(
+          spacing: 24,
+          runSpacing: 16,
+          children: [
+            _buildAppStatCard("TOTAL", total.toString(), isSelected: _appFilter == "TOTAL"),
+            _buildAppStatCard("ACTIVE", active.toString(), valueColor: Colors.green, isSelected: _appFilter == "ACTIVE"),
+            _buildAppStatCard("INACTIVE", inactive.toString(), valueColor: Colors.orange, isSelected: _appFilter == "INACTIVE"),
+            _buildAppStatCard("TOGGLES", toggles.toString(), valueColor: AdminTheme.royalBlue, isSelected: _appFilter == "TOGGLES"),
+          ],
+        ),
+        const SizedBox(height: 40),
+
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text("Enterprise App Configuration", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: AdminTheme.softShadow),
+                child: TextField(
+                  onChanged: (v) => setState(() => _appSearchQuery = v),
+                  decoration: const InputDecoration(hintText: "Search configuration...", border: InputBorder.none, icon: Icon(Icons.search)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
             ElevatedButton.icon(
-              onPressed: _handleGlobalSave,
-              icon: _isSyncing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save_rounded),
-              label: Text(_isSyncing ? "SAVING..." : "SAVE & SYNC"),
-              style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.royalBlue),
+              onPressed: () => _showAddEditAppSettingDialog(null), 
+              icon: const Icon(Icons.add), 
+              label: const Text("ADD APPLICATION SETTING"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AdminTheme.royalBlue,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        _buildTabGrid([
-          _buildSettingSection(title: "Identity", icon: Icons.badge_rounded, children: [
-            _buildStableSettingField("Restaurant Name", _restNameController),
-            _buildStableSettingField("Address", _addressController),
-          ]),
-          _buildSettingSection(title: "Contact", icon: Icons.contact_mail_rounded, children: [
-            _buildStableSettingField("Official Email", _emailController),
-            _buildStableSettingField("Phone Number", _phoneController),
-          ]),
-        ]),
+        const SizedBox(height: 32),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white, 
+            borderRadius: BorderRadius.circular(24), 
+            boxShadow: AdminTheme.softShadow,
+            border: Border.all(color: Colors.grey.shade100),
+          ),
+          child: Column(
+            children: [
+              // Table Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                decoration: BoxDecoration(
+                  color: AdminTheme.royalBlue.withValues(alpha: 0.05),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: const Row(
+                  children: [
+                    Expanded(flex: 3, child: Text("SETTING NAME", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                    Expanded(flex: 4, child: Text("CURRENT CONFIGURATION", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                    Expanded(flex: 2, child: Center(child: Text("STATUS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)))),
+                    SizedBox(width: 100, child: Center(child: Text("ACTION", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)))),
+                  ],
+                ),
+              ),
+              if (filtered.isEmpty)
+                const Padding(padding: EdgeInsets.all(64), child: Text("No settings found matching your search.", style: TextStyle(color: Colors.grey)))
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filtered.length,
+                  separatorBuilder: (ctx, i) => Divider(height: 1, color: Colors.grey.shade50),
+                  itemBuilder: (ctx, i) {
+                    final s = filtered[i];
+                    int realIdx = _configState['app_configs_list'].indexOf(s);
+                    bool isToggle = s['type'] == 'toggle';
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 3, 
+                            child: Row(
+                              children: [
+                                Icon(s['icon'] ?? Icons.settings_rounded, size: 18, color: AdminTheme.royalBlue),
+                                const SizedBox(width: 12),
+                                Text(s['name'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AdminTheme.darkNavy)),
+                              ],
+                            )
+                          ),
+                          Expanded(
+                            flex: 4, 
+                            child: isToggle 
+                              ? Text(s['value'] == true ? 'ENABLED' : 'DISABLED', style: TextStyle(color: s['value'] == true ? Colors.green : Colors.red, fontWeight: FontWeight.bold, fontSize: 12))
+                              : Text(s['value'].toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.blueGrey), maxLines: 1, overflow: TextOverflow.ellipsis)
+                          ),
+                          Expanded(
+                            flex: 2, 
+                            child: Center(
+                              child: Transform.scale(
+                                scale: 0.8,
+                                child: Switch.adaptive(
+                                  value: s['status'] == 'Active',
+                                  onChanged: (v) {
+                                    setState(() => s['status'] = v ? 'Active' : 'Inactive');
+                                    _saveConfig();
+                                  },
+                                  activeTrackColor: AdminTheme.royalBlue.withValues(alpha: 0.3),
+                                  activeColor: AdminTheme.royalBlue,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 100,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit_note_rounded, color: Colors.blue, size: 24), 
+                                  onPressed: () => _showAddEditAppSettingDialog(realIdx),
+                                  tooltip: "Modify ${s['name']}",
+                                  constraints: const BoxConstraints(),
+                                  padding: const EdgeInsets.all(4),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20), 
+                                  onPressed: () => _showConfirmDeleteDialog("Setting", realIdx, "app_configs_list"),
+                                  tooltip: "Remove ${s['name']}",
+                                  constraints: const BoxConstraints(),
+                                  padding: const EdgeInsets.all(4),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _buildAppStatCard(String label, String value, {bool isSelected = false, Color? valueColor}) {
+    return InkWell(
+      onTap: () => setState(() => _appFilter = label),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 180,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected ? Border.all(color: AdminTheme.royalBlue, width: 2) : Border.all(color: Colors.grey.shade100),
+          boxShadow: AdminTheme.softShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: isSelected ? AdminTheme.royalBlue : Colors.grey, letterSpacing: 0.8)),
+            const SizedBox(height: 12),
+            Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: valueColor ?? AdminTheme.darkNavy)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddEditAppSettingDialog(int? index) {
+    final bool isEditing = index != null;
+    final Map<String, dynamic> data = isEditing ? _configState['app_configs_list'][index] : {};
+    
+    final nameCtrl = TextEditingController(text: data['name'] ?? '');
+    final valCtrl = TextEditingController(text: data['value']?.toString() ?? '');
+    String selectedType = data['type'] ?? 'text';
+    bool toggleVal = data['value'] == true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: [
+              Icon(isEditing ? Icons.edit_note_rounded : Icons.add_circle_outline_rounded, color: AdminTheme.royalBlue),
+              const SizedBox(width: 12),
+              Text(isEditing ? "Edit Setting" : "Add Setting", style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Setting Name")),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  items: ['text', 'number', 'toggle'].map((t) => DropdownMenuItem(value: t, child: Text(t.toUpperCase()))).toList(),
+                  onChanged: (v) => setModalState(() => selectedType = v!),
+                  decoration: const InputDecoration(labelText: "Data Type"),
+                ),
+                const SizedBox(height: 16),
+                selectedType == 'toggle'
+                  ? SwitchListTile.adaptive(
+                      title: const Text("Initial State"),
+                      value: toggleVal, 
+                      onChanged: (v) => setModalState(() => toggleVal = v),
+                    )
+                  : TextField(
+                      controller: valCtrl, 
+                      decoration: const InputDecoration(labelText: "Setting Value"),
+                      keyboardType: selectedType == 'number' ? TextInputType.number : TextInputType.text,
+                    ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.royalBlue),
+              onPressed: () {
+                if (nameCtrl.text.isEmpty) return;
+                setState(() {
+                  final List list = _configState['app_configs_list'];
+                  final newItem = {
+                    'id': isEditing ? data['id'] : (list.length + 1).toString(),
+                    'name': nameCtrl.text.trim(),
+                    'value': selectedType == 'toggle' ? toggleVal : valCtrl.text.trim(),
+                    'key': data['key'] ?? 'custom_${DateTime.now().millisecondsSinceEpoch}',
+                    'icon': data['icon'] ?? Icons.settings_applications_rounded,
+                    'type': selectedType,
+                    'status': data['status'] ?? 'Active',
+                  };
+                  if (isEditing) {
+                    _configState['app_configs_list'][index] = newItem;
+                    // Sync main config keys for core settings
+                    if (newItem['key'] == 'rest_name') _configState['rest_name'] = newItem['value'];
+                    if (newItem['key'] == 'address') _configState['address'] = newItem['value'];
+                    if (newItem['key'] == 'email') _configState['email'] = newItem['value'];
+                    if (newItem['key'] == 'phone') _configState['phone'] = newItem['value'];
+                  } else {
+                    _configState['app_configs_list'].add(newItem);
+                  }
+                });
+                _saveConfig();
+                Navigator.pop(ctx);
+                _showFeedback("Success", "Setting ${isEditing ? 'updated' : 'added'} successfully.");
+              }, 
+              child: const Text("SAVE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildStableSettingField(String label, TextEditingController controller, {String? hint}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16), 
+      padding: const EdgeInsets.only(bottom: 24), 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, 
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold, letterSpacing: 0.5)), 
-          const SizedBox(height: 8),
+          Text(label, style: TextStyle(fontSize: 13, color: Colors.grey.shade500, fontWeight: FontWeight.bold)), 
+          const SizedBox(height: 12),
           TextField(
             controller: controller,
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: Colors.grey.shade300, fontSize: 13),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade100)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AdminTheme.royalBlue, width: 1.5)),
-              fillColor: AdminTheme.pearlWhite.withValues(alpha: 0.3),
+              hintStyle: TextStyle(color: Colors.grey.shade300, fontSize: 14),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade100)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade100)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AdminTheme.royalBlue, width: 2)),
+              fillColor: const Color(0xFFF8FAFC),
               filled: true,
             ),
-            style: const TextStyle(fontWeight: FontWeight.bold, color: AdminTheme.darkNavy, fontSize: 14),
+            style: const TextStyle(fontWeight: FontWeight.bold, color: AdminTheme.darkNavy, fontSize: 15),
           )
         ]
       )
@@ -431,14 +722,34 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
     String key = type == "Currency" ? "currencies" : (type == "Country" ? "countries" : (type == "City" ? "cities" : "states"));
     final List allItems = List.from(_configState[key] ?? []);
     
+    // Stats calculation
+    final total = allItems.length;
+    final active = allItems.where((i) => i['status'] == 'Active').length;
+    final inactive = allItems.where((i) => i['status'] != 'Active').length;
+
     final filtered = allItems.where((i) {
       bool matchesSearch = i['name'].toString().toLowerCase().contains(_locSearchQuery.toLowerCase());
-      bool matchesStatus = _locStatusFilter == "ALL" || i['status'] == _locStatusFilter;
+      bool matchesStatus = true;
+      if (_locStatusFilter == "ACTIVE") matchesStatus = i['status'] == 'Active';
+      else if (_locStatusFilter == "INACTIVE") matchesStatus = i['status'] != 'Active';
+      
       return matchesSearch && matchesStatus;
     }).toList();
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Responsive Stats Row
+        Wrap(
+          spacing: 24,
+          runSpacing: 16,
+          children: [
+            _buildLocStatCard("TOTAL", total.toString(), isSelected: _locStatusFilter == "ALL"),
+            _buildLocStatCard("ACTIVE", active.toString(), valueColor: Colors.green, isSelected: _locStatusFilter == "ACTIVE"),
+            _buildLocStatCard("INACTIVE", inactive.toString(), valueColor: Colors.orange, isSelected: _locStatusFilter == "INACTIVE"),
+          ],
+        ),
+        const SizedBox(height: 40),
         Row(
           children: [
             Expanded(
@@ -460,63 +771,342 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
           ],
         ),
         const SizedBox(height: 24),
-        GridView.builder(
-          shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-          itemCount: filtered.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 3 : (MediaQuery.of(context).size.width > 800 ? 2 : 1), 
-            mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 3.0
+        _buildLocationDataTable(filtered, key, type),
+      ],
+    );
+  }
+
+  Widget _buildLocationDataTable(List items, String key, String type) {
+    bool isCurrency = type == "Currency";
+    bool isCountry = type == "Country";
+    bool isState = type == "State";
+    bool isCity = type == "City";
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white, 
+        borderRadius: BorderRadius.circular(24), 
+        boxShadow: AdminTheme.softShadow,
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Column(
+        children: [
+          // Table Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            decoration: BoxDecoration(
+              color: AdminTheme.royalBlue.withValues(alpha: 0.05),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 50, child: Text("SL.", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                Expanded(flex: 3, child: Text("$type NAME".toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                if (isCurrency) ...[
+                   const Expanded(flex: 2, child: Text("ISO CODE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                   const Expanded(flex: 2, child: Text("SYMBOL", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                ],
+                if (isCountry) ...[
+                   const Expanded(flex: 2, child: Text("CODE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                   const Expanded(flex: 2, child: Text("PHONE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                ],
+                if (isState) const Expanded(flex: 3, child: Text("COUNTRY", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                if (isCity) const Expanded(flex: 3, child: Text("STATE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                const Expanded(flex: 2, child: Center(child: Text("STATUS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)))),
+                const SizedBox(width: 120, child: Center(child: Text("ACTIONS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)))),
+              ],
+            ),
           ),
-          itemBuilder: (ctx, i) {
-            final item = filtered[i];
-            int realIndex = _configState[key].indexOf(item);
-            return Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: AdminTheme.softShadow),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start, 
-                      mainAxisAlignment: MainAxisAlignment.center, 
-                      children: [
-                        Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), 
-                        Text(item['status'], style: TextStyle(color: item['status'] == 'Active' ? Colors.green : Colors.grey, fontSize: 12))
-                      ]
-                    ),
-                  ),
-                  Row(
+          if (items.isEmpty)
+            Padding(padding: const EdgeInsets.all(64), child: Text("No $type found.", style: const TextStyle(color: Colors.grey)))
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: items.length,
+              separatorBuilder: (ctx, i) => Divider(height: 1, color: Colors.grey.shade50),
+              itemBuilder: (ctx, i) {
+                final item = items[i];
+                int realIdx = _configState[key].indexOf(item);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                  child: Row(
                     children: [
-                      IconButton(icon: const Icon(Icons.edit_outlined, size: 18), onPressed: () => _showAddEditLocationDialog(realIndex, key, type)),
-                      const Icon(Icons.chevron_right, color: Colors.grey),
+                      SizedBox(width: 50, child: Text("${i + 1}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13))),
+                      Expanded(flex: 3, child: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AdminTheme.darkNavy))),
+                      
+                      // Dynamic Columns based on type
+                      if (isCurrency) ...[
+                        Expanded(flex: 2, child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(color: AdminTheme.royalBlue.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8)),
+                          child: Text(item['code'] ?? 'N/A', style: const TextStyle(color: AdminTheme.royalBlue, fontWeight: FontWeight.bold, fontSize: 13)),
+                        )),
+                        Expanded(flex: 2, child: Text(item['symbol'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AdminTheme.darkNavy))),
+                      ],
+                      if (isCountry) ...[
+                        Expanded(flex: 2, child: Text(item['code'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AdminTheme.darkNavy))),
+                        Expanded(flex: 2, child: Text(item['phone'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey))),
+                      ],
+                      if (isState) Expanded(flex: 3, child: Text(item['country'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey))),
+                      if (isCity) Expanded(flex: 3, child: Text(item['state'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey))),
+
+                      Expanded(flex: 2, child: Center(
+                        child: Transform.scale(
+                          scale: 0.8,
+                          child: Switch.adaptive(
+                            value: item['status'] == 'Active',
+                            onChanged: (v) {
+                              setState(() => item['status'] = v ? 'Active' : 'Inactive');
+                              _saveConfig();
+                            },
+                            activeTrackColor: AdminTheme.royalBlue.withValues(alpha: 0.3),
+                            activeColor: AdminTheme.royalBlue,
+                          ),
+                        ),
+                      )),
+                      SizedBox(
+                        width: 120,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_note_rounded, color: Colors.blue, size: 24), 
+                              onPressed: () => _showAddEditLocationDialog(realIdx, key, type)
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 22), 
+                              onPressed: () => _showConfirmDeleteDialog(type, realIdx, key)
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ],
-              ),
-            );
-          },
-        ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCurrencyMeta(String label, String value) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
       ],
     );
   }
 
   // --- 3. COMMISSION ---
+  // --- 3. COMMISSION ---
   Widget _buildCommissionModule() {
     final List allComms = List.from(_configState['commissions'] ?? []);
-    return GridView.builder(
-      shrinkWrap: true, itemCount: allComms.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, childAspectRatio: 2.5, crossAxisSpacing: 16, mainAxisSpacing: 16),
-      itemBuilder: (ctx, i) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: AdminTheme.softShadow),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final filtered = allComms.where((c) => 
+      c['name'].toString().toLowerCase().contains(_commSearchQuery.toLowerCase()) ||
+      c['category'].toString().toLowerCase().contains(_commSearchQuery.toLowerCase())
+    ).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Text(allComms[i]['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text("${allComms[i]['value']}${allComms[i]['type'] == 'Percentage' ? '%' : ''}", style: const TextStyle(color: AdminTheme.emeraldGreen, fontWeight: FontWeight.bold, fontSize: 20)),
-            const Spacer(),
-            Text(allComms[i]['category'], style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: AdminTheme.softShadow),
+                child: TextField(
+                  onChanged: (v) => setState(() => _commSearchQuery = v),
+                  decoration: const InputDecoration(hintText: "Search commissions...", border: InputBorder.none, icon: Icon(Icons.search)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton.icon(
+              onPressed: () => _showAddEditCommissionDialog(null), 
+              icon: const Icon(Icons.add), 
+              label: const Text("ADD COMMISSION")
+            ),
+          ],
+        ),
+        const SizedBox(height: 32),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white, 
+            borderRadius: BorderRadius.circular(24), 
+            boxShadow: AdminTheme.softShadow,
+            border: Border.all(color: Colors.grey.shade100),
+          ),
+          child: Column(
+            children: [
+              // Table Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                decoration: BoxDecoration(
+                  color: AdminTheme.royalBlue.withValues(alpha: 0.05),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: const Row(
+                  children: [
+                    SizedBox(width: 50, child: Text("SL.", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                    Expanded(flex: 3, child: Text("COMMISSION NAME", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                    Expanded(flex: 2, child: Text("CATEGORY", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                    Expanded(flex: 2, child: Text("TYPE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                    Expanded(flex: 2, child: Text("VALUE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                    Expanded(flex: 2, child: Center(child: Text("STATUS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)))),
+                    SizedBox(width: 120, child: Center(child: Text("ACTIONS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)))),
+                  ],
+                ),
+              ),
+              if (filtered.isEmpty)
+                const Padding(padding: EdgeInsets.all(64), child: Text("No commissions found.", style: TextStyle(color: Colors.grey)))
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filtered.length,
+                  separatorBuilder: (ctx, i) => Divider(height: 1, color: Colors.grey.shade50),
+                  itemBuilder: (ctx, i) {
+                    final comm = filtered[i];
+                    int realIdx = _configState['commissions'].indexOf(comm);
+                    bool isPercentage = comm['type'] == 'Percentage';
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                      child: Row(
+                        children: [
+                          SizedBox(width: 50, child: Text("${i + 1}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13))),
+                          Expanded(flex: 3, child: Text(comm['name'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AdminTheme.darkNavy))),
+                          Expanded(flex: 2, child: Text(comm['category'], style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.bold))),
+                          Expanded(flex: 2, child: Text(comm['type'], style: const TextStyle(fontSize: 13, color: AdminTheme.royalBlue, fontWeight: FontWeight.bold))),
+                          Expanded(flex: 2, child: Text(
+                            "${comm['value']}${isPercentage ? '%' : ''}", 
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AdminTheme.emeraldGreen)
+                          )),
+                          Expanded(flex: 2, child: Center(
+                            child: Transform.scale(
+                              scale: 0.8,
+                              child: Switch.adaptive(
+                                value: comm['status'] == 'Active',
+                                onChanged: (v) {
+                                  setState(() => comm['status'] = v ? 'Active' : 'Inactive');
+                                  _saveConfig();
+                                },
+                                activeTrackColor: AdminTheme.royalBlue.withValues(alpha: 0.3),
+                                activeColor: AdminTheme.royalBlue,
+                              ),
+                            ),
+                          )),
+                          SizedBox(
+                            width: 120,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit_note_rounded, color: Colors.blue, size: 24), 
+                                  onPressed: () => _showAddEditCommissionDialog(realIdx)
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 22), 
+                                  onPressed: () => _showConfirmDeleteDialog("Commission", realIdx, "commissions")
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showAddEditCommissionDialog(int? index) {
+    final bool isEditing = index != null;
+    final Map<String, dynamic> data = isEditing ? _configState['commissions'][index] : {};
+    
+    final nameCtrl = TextEditingController(text: data['name'] ?? '');
+    final valCtrl = TextEditingController(text: data['value'] ?? '');
+    String selectedType = data['type'] ?? 'Percentage';
+    String selectedCat = data['category'] ?? 'Partner';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: [
+              Icon(isEditing ? Icons.edit_note_rounded : Icons.add_circle_outline_rounded, color: AdminTheme.royalBlue),
+              const SizedBox(width: 12),
+              Text(isEditing ? "Edit Commission" : "Add Commission", style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Commission Name")),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: selectedCat,
+                      items: ['Partner', 'Staff', 'Affiliate', 'Platform'].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                      onChanged: (v) => setModalState(() => selectedCat = v!),
+                      decoration: const InputDecoration(labelText: "Category"),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: selectedType,
+                      items: ['Percentage', 'Fixed'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                      onChanged: (v) => setModalState(() => selectedType = v!),
+                      decoration: const InputDecoration(labelText: "Type"),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(controller: valCtrl, decoration: const InputDecoration(labelText: "Value", hintText: "e.g. 15"), keyboardType: TextInputType.number),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.royalBlue),
+              onPressed: () {
+                if (nameCtrl.text.isEmpty) return;
+                setState(() {
+                  final newItem = {
+                    'name': nameCtrl.text.trim(),
+                    'category': selectedCat,
+                    'type': selectedType,
+                    'value': valCtrl.text.trim(),
+                    'status': data['status'] ?? 'Active',
+                  };
+                  if (isEditing) {
+                    _configState['commissions'][index] = newItem;
+                  } else {
+                    _configState['commissions'].add(newItem);
+                  }
+                });
+                _saveConfig();
+                Navigator.pop(ctx);
+              }, 
+              child: const Text("SAVE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+            ),
           ],
         ),
       ),
@@ -773,30 +1363,378 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
 
   // --- 5. FACTORY RESET ---
   Widget _buildFactoryReset() {
-    final List actions = List.from(_configState['reset_actions'] ?? []);
-    final filtered = actions.where((i) => i['title'].toString().toLowerCase().contains(_resetSearchQuery.toLowerCase())).toList();
+    final List allActions = List.from(_configState['reset_actions'] ?? []);
+    
+    // Stats calculation
+    final total = allActions.length;
+    final active = allActions.where((a) => a['status'] == 'Active').length;
+    final inactive = allActions.where((a) => a['status'] != 'Active').length;
+    final critical = allActions.where((a) => a['isNuclear'] == true).length;
+
+    final filtered = allActions.where((action) {
+      bool matchesSearch = action['title'].toString().toLowerCase().contains(_resetSearchQuery.toLowerCase());
+      bool matchesFilter = true;
+      if (_resetFilter == "ACTIVE") matchesFilter = action['status'] == 'Active';
+      else if (_resetFilter == "INACTIVE") matchesFilter = action['status'] != 'Active';
+      else if (_resetFilter == "CRITICAL") matchesFilter = action['isNuclear'] == true;
+      
+      return matchesSearch && matchesFilter;
+    }).toList();
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(onChanged: (v) => setState(() => _resetSearchQuery = v), decoration: const InputDecoration(hintText: "Search reset actions...")),
-        const SizedBox(height: 24),
-        GridView.builder(
-          shrinkWrap: true, itemCount: filtered.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 3.5, mainAxisSpacing: 16, crossAxisSpacing: 16),
-          itemBuilder: (ctx, i) => Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: AdminTheme.softShadow),
-            child: Row(
+        // Responsive Stats Row
+        Wrap(
+          spacing: 24,
+          runSpacing: 16,
+          children: [
+            _buildResetStatCard("TOTAL", total.toString(), isSelected: _resetFilter == "TOTAL"),
+            _buildResetStatCard("ACTIVE", active.toString(), valueColor: Colors.green, isSelected: _resetFilter == "ACTIVE"),
+            _buildResetStatCard("INACTIVE", inactive.toString(), valueColor: Colors.orange, isSelected: _resetFilter == "INACTIVE"),
+            _buildResetStatCard("CRITICAL", critical.toString(), valueColor: Colors.red, isSelected: _resetFilter == "CRITICAL"),
+          ],
+        ),
+        const SizedBox(height: 40),
+
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: AdminTheme.softShadow),
+                child: TextField(
+                  onChanged: (v) => setState(() => _resetSearchQuery = v),
+                  decoration: const InputDecoration(hintText: "Search reset actions...", border: InputBorder.none, icon: Icon(Icons.search)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton.icon(
+              onPressed: () => _showAddEditResetActionDialog(null), 
+              icon: const Icon(Icons.add), 
+              label: const Text("ADD RESET ACTION")
+            ),
+          ],
+        ),
+        const SizedBox(height: 32),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            int crossAxisCount = constraints.maxWidth > 1200 ? 3 : (constraints.maxWidth > 800 ? 2 : 1);
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: filtered.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount, 
+                mainAxisSpacing: 24, 
+                crossAxisSpacing: 24, 
+                childAspectRatio: constraints.maxWidth > 1400 ? 2.5 : 2.0,
+              ),
+              itemBuilder: (ctx, i) {
+                final action = filtered[i];
+                int realIdx = _configState['reset_actions'].indexOf(action);
+                bool isNuclear = action['isNuclear'] == true;
+
+                return Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white, 
+                    borderRadius: BorderRadius.circular(24), 
+                    boxShadow: AdminTheme.softShadow,
+                    border: Border.all(color: isNuclear ? Colors.red.withValues(alpha: 0.1) : Colors.grey.shade100, width: 2),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(color: (isNuclear ? Colors.red : AdminTheme.royalBlue).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
+                            child: Icon(action['icon'] ?? Icons.settings_backup_restore_rounded, color: isNuclear ? Colors.red : AdminTheme.royalBlue, size: 24),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(action['title'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AdminTheme.darkNavy), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                Row(
+                                  children: [
+                                    Text(action['status'] ?? 'Active', style: TextStyle(color: action['status'] == 'Active' ? Colors.green : Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                                    const SizedBox(width: 8),
+                                    Transform.scale(
+                                      scale: 0.6,
+                                      child: Switch.adaptive(
+                                        value: action['status'] == 'Active', 
+                                        onChanged: (v) {
+                                          setState(() => action['status'] = v ? 'Active' : 'Inactive');
+                                          _saveConfig();
+                                        }
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isNuclear)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(6)),
+                              child: const Text("NUCLEAR", style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                            ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.edit_note_rounded, color: Colors.blue, size: 22), 
+                            onPressed: () => _showAddEditResetActionDialog(realIdx)
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20), 
+                            onPressed: () => _deleteResetAction(realIdx)
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Text(action['desc'], style: const TextStyle(fontSize: 12, color: Colors.grey, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      const Spacer(),
+                      ElevatedButton(
+                        onPressed: () => _runResetAction(action), 
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isNuclear ? Colors.red : AdminTheme.royalBlue,
+                          minimumSize: const Size(double.infinity, 45),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ), 
+                        child: Text("RUN ACTION", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocStatCard(String label, String value, {bool isSelected = false, Color? valueColor}) {
+    return InkWell(
+      onTap: () => setState(() => _locStatusFilter = label == "TOTAL" ? "ALL" : label),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected ? Border.all(color: AdminTheme.royalBlue, width: 2) : Border.all(color: Colors.grey.shade100),
+          boxShadow: AdminTheme.softShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: isSelected ? AdminTheme.royalBlue : Colors.grey, letterSpacing: 0.8)),
+            const SizedBox(height: 12),
+            Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: valueColor ?? AdminTheme.darkNavy)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResetStatCard(String label, String value, {bool isSelected = false, Color? valueColor}) {
+    return InkWell(
+      onTap: () => setState(() => _resetFilter = label),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected ? Border.all(color: AdminTheme.royalBlue, width: 2) : Border.all(color: Colors.grey.shade100),
+          boxShadow: AdminTheme.softShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: isSelected ? AdminTheme.royalBlue : Colors.grey, letterSpacing: 0.8)),
+            const SizedBox(height: 12),
+            Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: valueColor ?? AdminTheme.darkNavy)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddEditResetActionDialog(int? index) {
+    final bool isEditing = index != null;
+    final Map<String, dynamic> data = isEditing ? _configState['reset_actions'][index] : {};
+    
+    final titleCtrl = TextEditingController(text: data['title'] ?? '');
+    final descCtrl = TextEditingController(text: data['desc'] ?? '');
+    bool isNuclear = data['isNuclear'] ?? false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: [
+              Icon(isEditing ? Icons.edit_note_rounded : Icons.add_circle_outline_rounded, color: AdminTheme.royalBlue),
+              const SizedBox(width: 12),
+              Text(isEditing ? "Edit Reset Action" : "Add Reset Action", style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(filtered[i]['icon'], color: filtered[i]['isNuclear'] ? Colors.red : AdminTheme.royalBlue),
-                const SizedBox(width: 16),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Text(filtered[i]['title'], style: const TextStyle(fontWeight: FontWeight.bold)), Text(filtered[i]['desc'], style: const TextStyle(fontSize: 10, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis)])),
-                ElevatedButton(onPressed: () {}, style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent), child: const Text("RUN")),
+                TextField(
+                  controller: titleCtrl, 
+                  decoration: const InputDecoration(labelText: "Action Title", hintText: "e.g. Wipe Cache, Reset Sales")
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descCtrl, 
+                  decoration: const InputDecoration(labelText: "Description", hintText: "What does this action do?"),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isNuclear ? Colors.red.withValues(alpha: 0.05) : Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: isNuclear ? Colors.red.withValues(alpha: 0.2) : Colors.transparent),
+                  ),
+                  child: Column(
+                    children: [
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text("Critical (Nuclear) Action?", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: const Text("Checking this makes the action high-risk and destructive.", style: TextStyle(fontSize: 10)),
+                        value: isNuclear, 
+                        activeColor: Colors.red,
+                        onChanged: (v) => setModalState(() => isNuclear = v!),
+                      ),
+                      if (isNuclear)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 8),
+                          child: Row(
+                            children: [
+                              Icon(Icons.report_problem_rounded, color: Colors.red, size: 14),
+                              SizedBox(width: 8),
+                              Expanded(child: Text("Warning: Destructive actions cannot be undone once executed.", style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold))),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.royalBlue),
+              onPressed: () {
+                if (titleCtrl.text.trim().isEmpty) {
+                  _showFeedback("Error", "Title is required.", isError: true);
+                  return;
+                }
+                setState(() {
+                  final newItem = {
+                    'title': titleCtrl.text.trim(),
+                    'desc': descCtrl.text.trim(),
+                    'icon': data['icon'] ?? Icons.settings_backup_restore_rounded,
+                    'isNuclear': isNuclear,
+                    'status': data['status'] ?? 'Active',
+                  };
+                  if (isEditing) {
+                    _configState['reset_actions'][index] = newItem;
+                  } else {
+                    _configState['reset_actions'].add(newItem);
+                  }
+                });
+                _saveConfig();
+                Navigator.pop(ctx);
+                _showFeedback("Success", "Reset action ${isEditing ? 'updated' : 'added'}.");
+              }, 
+              child: const Text("SAVE ACTION", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  void _deleteResetAction(int index) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Delete Action?"),
+        content: const Text("This will remove this reset action from the list."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+          TextButton(
+            onPressed: () {
+              setState(() => _configState['reset_actions'].removeAt(index));
+              _saveConfig();
+              Navigator.pop(ctx);
+            }, 
+            child: const Text("DELETE", style: TextStyle(color: Colors.red))
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _runResetAction(Map action) {
+    bool isNuclear = action['isNuclear'] == true;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(isNuclear ? Icons.warning_rounded : Icons.info_rounded, color: isNuclear ? Colors.red : AdminTheme.royalBlue),
+            const SizedBox(width: 12),
+            Text(isNuclear ? "Critical Operation" : "Confirm Action"),
+          ],
+        ),
+        content: Text("Are you sure you want to perform: '${action['title']}'?\n\n${action['desc']}"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: isNuclear ? Colors.red : AdminTheme.royalBlue),
+            onPressed: () {
+              // Simulate action
+              Navigator.pop(ctx);
+              
+              if (isNuclear) {
+                _showFeedback("CRITICAL ACTION", "Executing high-risk operation: ${action['title']}...");
+              } else {
+                _showFeedback("Action Started", "${action['title']} is being executed in the background.");
+              }
+              
+              // Real destructive logic simulation
+              Future.delayed(const Duration(seconds: 2), () {
+                if (action['title'] == 'Full System Reset') {
+                   _showFeedback("SYSTEM WIPE", "All local data has been successfully cleared.", isError: true);
+                } else if (action['title'] == 'Clear Orders') {
+                   _showFeedback("SUCCESS", "Order history has been purged.");
+                } else {
+                   _showFeedback("COMPLETE", "Operation '${action['title']}' finished successfully.");
+                }
+              });
+            }, 
+            child: const Text("CONFIRM & RUN", style: TextStyle(color: Colors.white))
+          ),
+        ],
+      ),
     );
   }
 
@@ -811,24 +1749,32 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
 
   Widget _buildSettingSection({required String title, required IconData icon, required List<Widget> children}) {
     return Container(
-      width: 500, padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
         color: Colors.white, 
-        borderRadius: BorderRadius.circular(28), 
-        boxShadow: AdminTheme.softShadow,
-        border: Border.all(color: Colors.grey.shade100),
+        borderRadius: BorderRadius.circular(32), 
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
+        ],
+        border: Border.all(color: Colors.grey.shade50),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: AdminTheme.royalBlue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: AdminTheme.royalBlue, size: 20),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: AdminTheme.royalBlue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: AdminTheme.royalBlue, size: 22),
           ),
-          const SizedBox(width: 16), 
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AdminTheme.darkNavy))
+          const SizedBox(width: 20), 
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22, color: AdminTheme.darkNavy))
         ]),
-        const Divider(height: 48, thickness: 0.5),
+        const SizedBox(height: 24),
+        const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+        const SizedBox(height: 32),
         ...children,
       ]),
     );
@@ -1765,36 +2711,429 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
 
   // --- 9. LANGUAGE MODULE ---
   Widget _buildLanguageModule() {
-    return Column(
-      children: [
-        const Text("Choose System Language", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 24),
-        ValueListenableBuilder<String>(
+    return ValueListenableBuilder<List<AppLanguage>>(
+      valueListenable: LanguageService().languages,
+      builder: (context, langs, _) {
+        return ValueListenableBuilder<String>(
           valueListenable: LanguageService().currentLanguageCode,
-          builder: (context, current, _) => Wrap(
-            spacing: 16, runSpacing: 16,
-            children: LanguageService().languages.value.map((l) => InkWell(
-              onTap: () => LanguageService().setLanguage(l.code),
-              child: Container(
-                width: 250, padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: current == l.code ? AdminTheme.royalBlue.withValues(alpha: 0.1) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: current == l.code ? AdminTheme.royalBlue : Colors.grey.shade200, width: 2),
-                ),
-                child: Row(
+          builder: (context, currentCode, _) {
+            final total = langs.length;
+            final active = langs.where((l) => l.status).length;
+            final inactive = langs.where((l) => !l.status).length;
+            final defaultCount = langs.where((l) => l.isDefault).length;
+
+            // Statistics Bar Row
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Icon and Title
+                Row(
                   children: [
-                    const Icon(Icons.language_rounded, color: AdminTheme.royalBlue),
-                    const SizedBox(width: 16),
-                    Expanded(child: Text(l.name, style: const TextStyle(fontWeight: FontWeight.bold))),
-                    if (current == l.code) const Icon(Icons.check_circle_rounded, color: AdminTheme.royalBlue, size: 20),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: AdminTheme.softShadow,
+                        border: Border.all(color: Colors.grey.shade100),
+                      ),
+                      child: const Icon(Icons.g_translate_rounded, color: AdminTheme.royalBlue, size: 32),
+                    ),
+                    const SizedBox(width: 24),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Language Settings", style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
+                        const SizedBox(height: 4),
+                        Text("Customize how your app speaks to your customers and staff.", style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+
+                Wrap(
+                  spacing: 24,
+                  runSpacing: 16,
+                  children: [
+                    _buildLanguageStatCard("TOTAL", total.toString(), isSelected: _langFilter == "TOTAL"),
+                    _buildLanguageStatCard("ACTIVE", active.toString(), valueColor: const Color(0xFF00CBA9), isSelected: _langFilter == "ACTIVE"),
+                    _buildLanguageStatCard("INACTIVE", inactive.toString(), valueColor: Colors.orange, isSelected: _langFilter == "INACTIVE"),
+                    _buildLanguageStatCard("DEFAULT", defaultCount.toString(), valueColor: Colors.purple, isSelected: _langFilter == "DEFAULT"),
+                  ],
+                ),
+                const SizedBox(height: 40),
+
+                // Section Title and Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Language List ($_langFilter)", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
+                        const SizedBox(height: 4),
+                        Text("Showing $total records found in database.", style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => _showAddNewLanguageDialog(),
+                      icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                      label: const Text("Add New Language", style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00CBA9),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+
+                // Responsive Layout Box without strict heights to remove overfitting/yellow warning bars
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final filteredLangs = langs.where((l) {
+                      if (_langFilter == "ACTIVE") return l.status;
+                      if (_langFilter == "INACTIVE") return !l.status;
+                      if (_langFilter == "DEFAULT") return l.isDefault;
+                      return true;
+                    }).toList();
+
+                    int crossAxisCount = constraints.maxWidth > 1200 ? 3 : (constraints.maxWidth > 800 ? 2 : 1);
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: filteredLangs.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        mainAxisSpacing: 24,
+                        crossAxisSpacing: 24,
+                        childAspectRatio: constraints.maxWidth > 1400 ? 1.4 : 1.25,
+                      ),
+                      itemBuilder: (ctx, i) {
+                        return _buildLanguageCard(filteredLangs[i]);
+                      },
+                    );
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageStatCard(String label, String value, {bool isSelected = false, Color? valueColor}) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _langFilter = label;
+        });
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 180,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected ? Border.all(color: AdminTheme.royalBlue, width: 2) : Border.all(color: Colors.grey.shade100),
+          boxShadow: AdminTheme.softShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: isSelected ? AdminTheme.royalBlue : Colors.grey, letterSpacing: 0.8)),
+            const SizedBox(height: 12),
+            Text(value, style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: valueColor ?? AdminTheme.darkNavy)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageCard(AppLanguage l) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AdminTheme.softShadow,
+        border: l.isDefault 
+            ? Border.all(color: Colors.orange.withValues(alpha: 0.5), width: 2) 
+            : Border.all(color: Colors.grey.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 52, height: 52,
+                decoration: BoxDecoration(
+                  color: AdminTheme.royalBlue.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Center(child: Text(l.code.toUpperCase(), style: const TextStyle(color: AdminTheme.royalBlue, fontWeight: FontWeight.w900, fontSize: 16))),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 2),
+                    Text(l.nativeName, style: const TextStyle(fontSize: 13, color: Colors.grey, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
-            )).toList(),
+              if (l.isDefault)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF4EB),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text("DEFAULT", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                ),
+            ],
           ),
+          const Spacer(),
+          const Text("Translation Progress", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.5)),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: (l.code == 'ds' || l.name.toLowerCase() == 'sfsf') ? 0.0 : 1.0,
+                    minHeight: 8,
+                    backgroundColor: const Color(0xFFE2E8F0),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00CBA9)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text((l.code == 'ds' || l.name.toLowerCase() == 'sfsf') ? "0%" : "100%", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
+            ],
+          ),
+          const Spacer(),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l.status ? "DISPLAY ON " : "DISPLAY OFF",
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: l.status ? const Color(0xFF00CBA9) : Colors.grey.shade400),
+                  ),
+                  const SizedBox(width: 4),
+                  Transform.scale(
+                    scale: 0.8,
+                    child: Switch.adaptive(
+                      value: l.status,
+                      activeTrackColor: const Color(0xFF00CBA9).withValues(alpha: 0.3),
+                      activeColor: const Color(0xFF00CBA9),
+                      onChanged: l.isDefault ? null : (v) {
+                        LanguageService().toggleLanguageStatus(l.id);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      l.isDefault ? Icons.star_rounded : Icons.star_outline_rounded, 
+                      color: Colors.orange, 
+                      size: 24
+                    ),
+                    onPressed: () => LanguageService().toggleDefaultLanguage(l.id),
+                    tooltip: l.isDefault ? "Unset Default" : "Set as Default",
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.edit_note_rounded, color: AdminTheme.royalBlue, size: 24),
+                    onPressed: () => _showEditLanguageDialog(l),
+                    tooltip: "Edit Language",
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                  ),
+                  if (!l.isDefault) ...[
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                      onPressed: () => _showDeleteLanguageConfirmation(l),
+                      tooltip: "Remove Language",
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(4),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddNewLanguageDialog() {
+    final nameCtrl = TextEditingController();
+    final nativeCtrl = TextEditingController();
+    final codeCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.add_circle_outline_rounded, color: AdminTheme.royalBlue),
+            SizedBox(width: 12),
+            Text("Add New Language", style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
         ),
-      ],
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl, 
+              decoration: const InputDecoration(labelText: "Language Name (e.g. French)", hintText: "English, Nepali, etc.")
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: nativeCtrl, 
+              decoration: const InputDecoration(labelText: "Native Name (e.g. Français)", hintText: "Native characters supported")
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: codeCtrl, 
+              decoration: const InputDecoration(labelText: "Language Code (e.g. fr)", hintText: "Two letter ISO code preferred")
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.royalBlue),
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty || codeCtrl.text.trim().isEmpty) {
+                _showFeedback("Error", "Name and Code are required.", isError: true);
+                return;
+              }
+              
+              final newLang = AppLanguage(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                name: nameCtrl.text.trim(),
+                nativeName: nativeCtrl.text.trim(),
+                code: codeCtrl.text.trim().toLowerCase(),
+                status: true,
+                isDefault: false,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              );
+              
+              await LanguageService().addLanguage(newLang);
+              Navigator.pop(ctx);
+              _showFeedback("Success", "${newLang.name} added to the system.");
+            },
+            child: const Text("SAVE LANGUAGE", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditLanguageDialog(AppLanguage l) {
+    final nameCtrl = TextEditingController(text: l.name);
+    final nativeCtrl = TextEditingController(text: l.nativeName);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.edit_note_rounded, color: AdminTheme.royalBlue),
+            const SizedBox(width: 12),
+            Text("Edit: ${l.name}"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Language Name")),
+            const SizedBox(height: 12),
+            TextField(controller: nativeCtrl, decoration: const InputDecoration(labelText: "Native Name")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.royalBlue),
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) {
+                _showFeedback("Error", "Language name cannot be empty.", isError: true);
+                return;
+              }
+              
+              final updatedLang = AppLanguage(
+                id: l.id,
+                name: nameCtrl.text.trim(),
+                nativeName: nativeCtrl.text.trim(),
+                code: l.code,
+                status: l.status,
+                isDefault: l.isDefault,
+                createdAt: l.createdAt,
+                updatedAt: DateTime.now(),
+              );
+              
+              await LanguageService().updateLanguage(updatedLang);
+              Navigator.pop(ctx);
+              _showFeedback("Updated", "${updatedLang.name} updated successfully.");
+            },
+            child: const Text("UPDATE CHANGES", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteLanguageConfirmation(AppLanguage l) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.red),
+            const SizedBox(width: 12),
+            const Text("Remove Language?"),
+          ],
+        ),
+        content: Text("Are you sure you want to remove '${l.name}' from your application? All translations associated with this language will be lost locally."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              await LanguageService().deleteLanguage(l.id);
+              Navigator.pop(ctx);
+              _showFeedback("Deleted", "${l.name} has been removed.");
+            },
+            child: const Text("DELETE", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1935,30 +3274,101 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
   void _showAddEditLocationDialog(int? index, String key, String type) {
     final bool isEditing = index != null;
     final Map<String, dynamic> existing = isEditing ? _configState[key][index] : {};
+    bool isCurrency = type == "Currency";
+    bool isCountry = type == "Country";
+    bool isState = type == "State";
+    bool isCity = type == "City";
+
     final nameCtrl = TextEditingController(text: existing['name'] ?? '');
+    final codeCtrl = TextEditingController(text: existing['code'] ?? '');
+    final symbolCtrl = TextEditingController(text: existing['symbol'] ?? '');
+    final phoneCtrl = TextEditingController(text: existing['phone'] ?? '');
+    final parentCtrl = TextEditingController(text: isState ? (existing['country'] ?? '') : (existing['state'] ?? ''));
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text("${isEditing ? 'Edit' : 'Add'} $type"),
-        content: TextField(controller: nameCtrl, decoration: InputDecoration(labelText: "$type Name")),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Icon(isEditing ? Icons.edit_note_rounded : Icons.add_circle_outline_rounded, color: AdminTheme.royalBlue),
+            const SizedBox(width: 12),
+            Text("${isEditing ? 'Edit' : 'Add'} $type", style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl, 
+                decoration: InputDecoration(labelText: "$type Name", hintText: "e.g. ${isCurrency ? 'Nepalese Rupee' : (isCountry ? 'Nepal' : (isState ? 'Lumbini' : 'Butwal'))}")
+              ),
+              if (isCurrency) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: "Currency Code", hintText: "e.g. NPR"))),
+                    const SizedBox(width: 16),
+                    Expanded(child: TextField(controller: symbolCtrl, decoration: const InputDecoration(labelText: "Symbol", hintText: "e.g. Rs."))),
+                  ],
+                ),
+              ],
+              if (isCountry) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: TextField(controller: codeCtrl, decoration: const InputDecoration(labelText: "Country Code", hintText: "e.g. NP"))),
+                    const SizedBox(width: 16),
+                    Expanded(child: TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: "Phone Prefix", hintText: "e.g. +977"))),
+                  ],
+                ),
+              ],
+              if (isState) ...[
+                const SizedBox(height: 16),
+                TextField(controller: parentCtrl, decoration: const InputDecoration(labelText: "Country", hintText: "e.g. Nepal")),
+              ],
+              if (isCity) ...[
+                const SizedBox(height: 16),
+                TextField(controller: parentCtrl, decoration: const InputDecoration(labelText: "State", hintText: "e.g. Lumbini")),
+              ],
+            ],
+          ),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.royalBlue),
             onPressed: () {
               if (nameCtrl.text.isEmpty) return;
               setState(() {
+                final Map<String, dynamic> newItem = {
+                  'name': nameCtrl.text.trim(),
+                  'status': existing['status'] ?? 'Active',
+                };
+                if (isCurrency) {
+                  newItem['code'] = codeCtrl.text.trim().toUpperCase();
+                  newItem['symbol'] = symbolCtrl.text.trim();
+                } else if (isCountry) {
+                  newItem['code'] = codeCtrl.text.trim().toUpperCase();
+                  newItem['phone'] = phoneCtrl.text.trim();
+                } else if (isState) {
+                  newItem['country'] = parentCtrl.text.trim();
+                } else if (isCity) {
+                  newItem['state'] = parentCtrl.text.trim();
+                }
+
                 if (isEditing) {
-                  _configState[key][index] = {...existing, 'name': nameCtrl.text};
+                  _configState[key][index] = newItem;
                 } else {
-                  (_configState[key] as List).insert(0, {'name': nameCtrl.text, 'status': 'Active'});
+                  (_configState[key] as List).insert(0, newItem);
                 }
               });
               _saveConfig();
               Navigator.pop(ctx);
-              _showFeedback("Saved", "Record updated locally.");
+              _showFeedback("Success", "$type saved successfully.");
             }, 
-            child: const Text("SAVE")
+            child: const Text("SAVE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
           ),
         ],
       ),

@@ -171,8 +171,9 @@ class LanguageService extends ChangeNotifier {
   }
 
   Future<void> addLanguage(AppLanguage lang) async {
-    languages.value = [...languages.value, lang];
+    languages.value = List.from(languages.value)..add(lang);
     await _persistLanguages();
+    notifyListeners();
   }
 
   Future<void> updateLanguage(AppLanguage lang) async {
@@ -182,22 +183,24 @@ class LanguageService extends ChangeNotifier {
       newList[idx] = lang;
       languages.value = newList;
       await _persistLanguages();
+      notifyListeners();
     }
   }
 
-  Future<void> setDefaultLanguage(String id) async {
-    final prefs = await SharedPreferences.getInstance();
-    
+  Future<void> toggleDefaultLanguage(String id) async {
     List<AppLanguage> newList = languages.value.map((l) {
       if (l.id == id) {
-        l.isDefault = true;
-        l.status = true; // Default must be active
-        // Also update current session language to this new default if no user preference
-        if (prefs.getString('selected_language_code') == null) {
-          currentLanguageCode.value = l.code;
-        }
-      } else {
-        l.isDefault = false;
+        final bool newDefault = !l.isDefault;
+        return AppLanguage(
+          id: l.id,
+          name: l.name,
+          nativeName: l.nativeName,
+          code: l.code,
+          status: newDefault ? true : l.status, // Auto-enable if set as default
+          isDefault: newDefault,
+          createdAt: l.createdAt,
+          updatedAt: DateTime.now(),
+        );
       }
       return l;
     }).toList();
@@ -209,8 +212,19 @@ class LanguageService extends ChangeNotifier {
 
   Future<void> toggleLanguageStatus(String id) async {
     List<AppLanguage> newList = languages.value.map((l) {
-      if (l.id == id && !l.isDefault) {
-        l.status = !l.status;
+      if (l.id == id) {
+        // Cannot disable if it's the only default or similar? 
+        // For now, allow unless logic says otherwise
+        return AppLanguage(
+          id: l.id,
+          name: l.name,
+          nativeName: l.nativeName,
+          code: l.code,
+          status: !l.status,
+          isDefault: l.isDefault,
+          createdAt: l.createdAt,
+          updatedAt: DateTime.now(),
+        );
       }
       return l;
     }).toList();
@@ -220,9 +234,6 @@ class LanguageService extends ChangeNotifier {
   }
 
   Future<void> deleteLanguage(String id) async {
-    final lang = languages.value.firstWhere((l) => l.id == id);
-    if (lang.isDefault) return; // Cannot delete default
-    
     List<AppLanguage> newList = languages.value.where((l) => l.id != id).toList();
     languages.value = newList;
     await _persistLanguages();
