@@ -552,7 +552,6 @@ class _AdminHubState extends State<AdminHub> {
                         ),
                         _buildSubDrawerItem(95, "Language"),
                         _buildSubDrawerItem(96, "Application Setting"),
-                        _buildSubDrawerItem(97, "App Setting"),
                         _buildSubDrawerItem(98, "Factory Reset"),
                         _buildSubDrawerItem(99, "Currency"),
                         _buildSubDrawerItem(100, "Country"),

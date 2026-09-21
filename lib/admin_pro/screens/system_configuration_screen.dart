@@ -231,6 +231,12 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
       {'id': '16', 'name': 'Currency Symbol', 'value': 'Rs.', 'key': 'currency_symbol', 'icon': Icons.currency_rupee_rounded, 'type': 'text', 'status': 'Active'},
       {'id': '17', 'name': 'Booking Buffer', 'value': '30 min', 'key': 'booking_buffer', 'icon': Icons.timer_rounded, 'type': 'text', 'status': 'Active'},
     ],
+    'payment_setup_list': [
+      {'id': '1', 'name': 'E-Sewa Merchant ID', 'value': 'ESW_CHY_101', 'key': 'esewa_id', 'icon': Icons.account_balance_wallet_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '2', 'name': 'Khalti Secret Key', 'value': 'KH_KEY_9921', 'key': 'khalti_key', 'icon': Icons.vpn_key_rounded, 'type': 'text', 'status': 'Active'},
+      {'id': '3', 'name': 'Test Mode (Sandbox)', 'value': true, 'key': 'payment_test_mode', 'icon': Icons.bug_report_rounded, 'type': 'toggle', 'status': 'Active'},
+      {'id': '4', 'name': 'Fonepay Merchant ID', 'value': 'FP_992837', 'key': 'fonepay_id', 'icon': Icons.qr_code_scanner_rounded, 'type': 'text', 'status': 'Inactive'},
+    ],
   };
 
   String _locSearchQuery = "";
@@ -238,6 +244,9 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
   String _commSearchQuery = ""; // New: Commission Search
   String _resetSearchQuery = "";
   String _appSearchQuery = ""; // New: App Setting Search
+  String _paySearchQuery = ""; // New: Payment Search
+  String _paySetupSearchQuery = ""; // New: Payment Setup Search
+  String _shipSearchQuery = ""; // New: Shipping Search
   String _smsSearchQuery = ""; // New: SMS search
   String _smsTemplateSearchQuery = ""; // New: Template search
   String _locStatusFilter = "ALL";
@@ -250,6 +259,8 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
   String _langFilter = "TOTAL"; // For filtering language cards via stats cards
   String _resetFilter = "TOTAL"; // For filtering factory reset actions via stats cards
   String _appFilter = "TOTAL"; // For filtering app settings via stats cards
+  String _payFilter = "TOTAL"; // For filtering payment methods via stats cards
+  String _shipFilter = "TOTAL"; // For filtering shipping methods via stats cards
 
   void _updateConfig(String key, dynamic value) {
     setState(() => _configState[key] = value);
@@ -354,7 +365,6 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
           _buildResponsiveHeader(),
           if (widget.mode != "Language") const SizedBox(height: 32),
           if (widget.mode == "Application Setting") _buildApplicationSetting()
-          else if (widget.mode == "App Setting") _buildAppSettingModule()
           else if (widget.mode == "Commission") _buildCommissionModule()
           else if (widget.mode == "Subscription Status") _buildSubscriptionStatus()
           else if (widget.mode == "Factory Reset") _buildFactoryReset()
@@ -2182,45 +2192,6 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
 
           const SizedBox(height: 48),
 
-          // 2.5 Gateway Config Card
-          _buildSettingSection(
-            title: "SMS Gateway Configuration", 
-            icon: Icons.vpn_key_outlined, 
-            children: [
-              _buildStableSettingField(
-                "API Gateway Key", 
-                _smsApiKeyController,
-                hint: "Enter your secure gateway API key",
-              ),
-              _buildStableSettingField(
-                "Authorized Sender ID", 
-                _smsSenderIdController,
-                hint: "E.G. CHIYALAA",
-              ),
-              const SizedBox(height: 8),
-              _buildToggleOption(
-                "Connection Status", 
-                "Enable or disable the SMS connection to the provider.", 
-                config['status'] == 'Enabled', 
-                (v) {
-                  setState(() => config['status'] = v ? 'Enabled' : 'Disabled');
-                  _saveConfig();
-                }
-              ),
-              const Divider(height: 40),
-              ElevatedButton.icon(
-                onPressed: _handleGlobalSave, 
-                icon: _isSyncing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save_rounded, size: 16),
-                label: Text(_isSyncing ? "SAVING..." : "SAVE GATEWAY SETTINGS"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AdminTheme.royalBlue,
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-              ),
-            ]
-          ),
-
-          const SizedBox(height: 48),
 
           // 3. History Section
           Row(
@@ -3137,56 +3108,308 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
     );
   }
 
-  // --- 10. APP SETTINGS MODULE ---
-  Widget _buildAppSettingModule() {
-    return _buildSettingSection(title: "App Preferences", icon: Icons.app_settings_alt_rounded, children: [
-      _buildToggleOption("Push Notifications", "Enable system alerts", true, (v) {}),
-      _buildToggleOption("Order Sound", "Play sound on new orders", true, (v) {}),
-      _buildToggleOption("Biometric Lock", "Use PIN/FaceID to login", false, (v) {}),
-      const Divider(height: 32),
-      const Text("App Version: v2.6.0 (Enterprise)", style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
-    ]);
-  }
-
   // --- 11. PAYMENT MODULE ---
   Widget _buildPaymentModule() {
     bool isSetup = widget.mode == "Payment Setup";
     if (isSetup) {
-      return _buildSettingSection(title: "Gateway Setup", icon: Icons.payments_outlined, children: [
-        _buildSettingField("E-Sewa Merchant ID", "ESW_CHY_101", (v) {}),
-        _buildSettingField("Khalti Secret Key", "KH_KEY_9921", (v) {}),
-        _buildToggleOption("Test Mode", "Use sandbox environment", true, (v) {}),
-      ]);
-    } else {
-      final List items = List.from(_configState['payment_methods'] ?? []);
+      final List allSetup = List.from(_configState['payment_setup_list'] ?? []);
+      final filtered = allSetup.where((s) {
+        return s['name'].toString().toLowerCase().contains(_paySetupSearchQuery.toLowerCase()) ||
+               s['value'].toString().toLowerCase().contains(_paySetupSearchQuery.toLowerCase());
+      }).toList();
+
       return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildActionHeader("Add Method", items.length),
-          const SizedBox(height: 24),
-          GridView.builder(
-            shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-            itemCount: items.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: MediaQuery.of(context).size.width > 1000 ? 3 : 1,
-              mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 3.5
-            ),
-            itemBuilder: (ctx, i) => Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: AdminTheme.softShadow),
-              child: Row(
-                children: [
-                  Icon(items[i]['icon'], color: AdminTheme.royalBlue),
-                  const SizedBox(width: 16),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(items[i]['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                      Text("Gateway: ${items[i]['gateway']}", style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                    ],
-                  )),
-                  _buildStatusBadge(items[i]['status']),
-                ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Digital Gateway Configuration", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
+              ElevatedButton.icon(
+                onPressed: () => _showAddEditPaymentSetupDialog(null), 
+                icon: const Icon(Icons.add), 
+                label: const Text("ADD SETUP CONFIG"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AdminTheme.royalBlue,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: AdminTheme.softShadow),
+            child: TextField(
+              onChanged: (v) => setState(() => _paySetupSearchQuery = v),
+              decoration: const InputDecoration(hintText: "Search setup keys or values...", border: InputBorder.none, icon: Icon(Icons.search)),
+            ),
+          ),
+          const SizedBox(height: 32),
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white, 
+              borderRadius: BorderRadius.circular(24), 
+              boxShadow: AdminTheme.softShadow,
+              border: Border.all(color: Colors.grey.shade100),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                  decoration: BoxDecoration(
+                    color: AdminTheme.royalBlue.withValues(alpha: 0.05),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  child: const Row(
+                    children: [
+                      SizedBox(width: 50, child: Text("SL.", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                      Expanded(flex: 3, child: Text("CONFIGURATION KEY", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                      Expanded(flex: 4, child: Text("VALUE", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                      Expanded(flex: 2, child: Center(child: Text("STATUS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)))),
+                      SizedBox(width: 120, child: Center(child: Text("ACTION", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)))),
+                    ],
+                  ),
+                ),
+                if (filtered.isEmpty)
+                  const Padding(padding: EdgeInsets.all(64), child: Text("No configuration found.", style: TextStyle(color: Colors.grey)))
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filtered.length,
+                    separatorBuilder: (ctx, i) => Divider(height: 1, color: Colors.grey.shade50),
+                    itemBuilder: (ctx, i) {
+                      final s = filtered[i];
+                      int realIdx = _configState['payment_setup_list'].indexOf(s);
+                      bool isToggle = s['type'] == 'toggle';
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                        child: Row(
+                          children: [
+                            SizedBox(width: 50, child: Text("${i + 1}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13))),
+                            Expanded(
+                              flex: 3, 
+                              child: Row(
+                                children: [
+                                  Icon(s['icon'] ?? Icons.settings_rounded, size: 18, color: AdminTheme.royalBlue),
+                                  const SizedBox(width: 12),
+                                  Text(s['name'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: AdminTheme.darkNavy)),
+                                ],
+                              )
+                            ),
+                            Expanded(
+                              flex: 4, 
+                              child: isToggle 
+                                ? Text(s['value'] == true ? 'ACTIVE (SANDBOX)' : 'PRODUCTION MODE', style: TextStyle(color: s['value'] == true ? Colors.blue : Colors.green, fontWeight: FontWeight.bold, fontSize: 12))
+                                : Text(s['value'].toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.blueGrey), maxLines: 1, overflow: TextOverflow.ellipsis)
+                            ),
+                            Expanded(
+                              flex: 2, 
+                              child: Center(
+                                child: Transform.scale(
+                                  scale: 0.8,
+                                  child: Switch.adaptive(
+                                    value: s['status'] == 'Active',
+                                    onChanged: (v) {
+                                      setState(() => s['status'] = v ? 'Active' : 'Inactive');
+                                      _saveConfig();
+                                    },
+                                    activeTrackColor: AdminTheme.royalBlue.withValues(alpha: 0.3),
+                                    activeColor: AdminTheme.royalBlue,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 120,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_note_rounded, color: Colors.blue, size: 24), 
+                                    onPressed: () => _showAddEditPaymentSetupDialog(realIdx),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20), 
+                                    onPressed: () => _showConfirmDeleteDialog("Setup Key", realIdx, "payment_setup_list"),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ],
+      );
+    } else {
+      final List allItems = List.from(_configState['payment_methods'] ?? []);
+      
+      // Stats
+      final total = allItems.length;
+      final active = allItems.where((i) => i['status'] == 'Active').length;
+      final inactive = allItems.where((i) => i['status'] != 'Active').length;
+
+      final filtered = allItems.where((i) {
+        bool matchesSearch = i['name'].toString().toLowerCase().contains(_paySearchQuery.toLowerCase()) ||
+                             i['gateway'].toString().toLowerCase().contains(_paySearchQuery.toLowerCase());
+        bool matchesFilter = true;
+        if (_payFilter == "ACTIVE") matchesFilter = i['status'] == 'Active';
+        else if (_payFilter == "INACTIVE") matchesFilter = i['status'] != 'Active';
+        
+        return matchesSearch && matchesFilter;
+      }).toList();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Stats Row
+          Wrap(
+            spacing: 24,
+            runSpacing: 16,
+            children: [
+              _buildPayStatCard("TOTAL", total.toString(), isSelected: _payFilter == "TOTAL"),
+              _buildPayStatCard("ACTIVE", active.toString(), valueColor: Colors.green, isSelected: _payFilter == "ACTIVE"),
+              _buildPayStatCard("INACTIVE", inactive.toString(), valueColor: Colors.orange, isSelected: _payFilter == "INACTIVE"),
+            ],
+          ),
+          const SizedBox(height: 40),
+
+          // Search & Add Bar
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: AdminTheme.softShadow),
+                  child: TextField(
+                    onChanged: (v) => setState(() => _paySearchQuery = v),
+                    decoration: const InputDecoration(hintText: "Search payment methods...", border: InputBorder.none, icon: Icon(Icons.search)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              ElevatedButton.icon(
+                onPressed: () => _showAddEditPaymentMethodDialog(null), 
+                icon: const Icon(Icons.add), 
+                label: const Text("ADD METHOD"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AdminTheme.royalBlue,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+
+          // Table Layout
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white, 
+              borderRadius: BorderRadius.circular(24), 
+              boxShadow: AdminTheme.softShadow,
+              border: Border.all(color: Colors.grey.shade100),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                  decoration: BoxDecoration(
+                    color: AdminTheme.royalBlue.withValues(alpha: 0.05),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  child: const Row(
+                    children: [
+                      SizedBox(width: 50, child: Text("SL.", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                      Expanded(flex: 3, child: Text("METHOD NAME", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                      Expanded(flex: 3, child: Text("GATEWAY / PROVIDER", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                      Expanded(flex: 2, child: Center(child: Text("STATUS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)))),
+                      SizedBox(width: 120, child: Center(child: Text("ACTIONS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)))),
+                    ],
+                  ),
+                ),
+                if (filtered.isEmpty)
+                  const Padding(padding: EdgeInsets.all(64), child: Text("No payment methods found.", style: TextStyle(color: Colors.grey)))
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filtered.length,
+                    separatorBuilder: (ctx, i) => Divider(height: 1, color: Colors.grey.shade50),
+                    itemBuilder: (ctx, i) {
+                      final item = filtered[i];
+                      int realIdx = _configState['payment_methods'].indexOf(item);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                        child: Row(
+                          children: [
+                            SizedBox(width: 50, child: Text("${i + 1}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13))),
+                            Expanded(
+                              flex: 3, 
+                              child: Row(
+                                children: [
+                                  Icon(item['icon'] ?? Icons.payment_rounded, size: 20, color: AdminTheme.royalBlue),
+                                  const SizedBox(width: 12),
+                                  Text(item['name'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AdminTheme.darkNavy)),
+                                ],
+                              )
+                            ),
+                            Expanded(
+                              flex: 3, 
+                              child: Text(
+                                item['gateway'] ?? 'None', 
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.blueGrey)
+                              )
+                            ),
+                            Expanded(
+                              flex: 2, 
+                              child: Center(
+                                child: Transform.scale(
+                                  scale: 0.8,
+                                  child: Switch.adaptive(
+                                    value: item['status'] == 'Active',
+                                    onChanged: (v) {
+                                      setState(() => item['status'] = v ? 'Active' : 'Inactive');
+                                      _saveConfig();
+                                    },
+                                    activeTrackColor: AdminTheme.royalBlue.withValues(alpha: 0.3),
+                                    activeColor: AdminTheme.royalBlue,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 120,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_note_rounded, color: Colors.blue, size: 24), 
+                                    onPressed: () => _showAddEditPaymentMethodDialog(realIdx)
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 22), 
+                                    onPressed: () => _showConfirmDeleteDialog("Payment Method", realIdx, "payment_methods")
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+              ],
             ),
           ),
         ],
@@ -3194,46 +3417,417 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
     }
   }
 
-  // --- 12. SHIPPING MODULE ---
-  Widget _buildShippingModule() {
-    final List items = List.from(_configState['shipping_methods'] ?? []);
-    return Column(
-      children: [
-        _buildActionHeader("Add Shipping", items.length),
-        const SizedBox(height: 24),
-        GridView.builder(
-          shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-          itemCount: items.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: MediaQuery.of(context).size.width > 1000 ? 3 : 1,
-            mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 3.0
+  void _showAddEditPaymentSetupDialog(int? index) {
+    final bool isEditing = index != null;
+    final Map<String, dynamic> data = isEditing ? _configState['payment_setup_list'][index] : {};
+    
+    final nameCtrl = TextEditingController(text: data['name'] ?? '');
+    final valCtrl = TextEditingController(text: data['value']?.toString() ?? '');
+    String selectedType = data['type'] ?? 'text';
+    bool toggleVal = data['value'] == true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: Row(
+            children: [
+              Icon(isEditing ? Icons.edit_note_rounded : Icons.add_circle_outline_rounded, color: AdminTheme.royalBlue),
+              const SizedBox(width: 12),
+              Text(isEditing ? "Edit Setup Key" : "Add Setup Config", style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
           ),
-          itemBuilder: (ctx, i) => Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: AdminTheme.softShadow),
+          content: SingleChildScrollView(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(items[i]['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    _buildStatusBadge(items[i]['status']),
-                  ],
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Configuration Name")),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  items: ['text', 'number', 'toggle'].map((t) => DropdownMenuItem(value: t, child: Text(t.toUpperCase()))).toList(),
+                  onChanged: (v) => setModalState(() => selectedType = v!),
+                  decoration: const InputDecoration(labelText: "Data Type"),
                 ),
-                const Spacer(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(items[i]['cost'], style: const TextStyle(color: AdminTheme.royalBlue, fontWeight: FontWeight.w900, fontSize: 18)),
-                    Text(items[i]['time'], style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                  ],
-                ),
+                const SizedBox(height: 16),
+                selectedType == 'toggle'
+                  ? SwitchListTile.adaptive(
+                      title: const Text("Initial State"),
+                      value: toggleVal, 
+                      onChanged: (v) => setModalState(() => toggleVal = v),
+                    )
+                  : TextField(
+                      controller: valCtrl, 
+                      decoration: const InputDecoration(labelText: "Config Value"),
+                      keyboardType: selectedType == 'number' ? TextInputType.number : TextInputType.text,
+                    ),
               ],
             ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.royalBlue),
+              onPressed: () {
+                if (nameCtrl.text.isEmpty) return;
+                setState(() {
+                  final newItem = {
+                    'name': nameCtrl.text.trim(),
+                    'value': selectedType == 'toggle' ? toggleVal : valCtrl.text.trim(),
+                    'key': data['key'] ?? 'pay_custom_${DateTime.now().millisecondsSinceEpoch}',
+                    'icon': data['icon'] ?? Icons.payment_rounded,
+                    'type': selectedType,
+                    'status': data['status'] ?? 'Active',
+                  };
+                  if (isEditing) {
+                    _configState['payment_setup_list'][index] = newItem;
+                  } else {
+                    _configState['payment_setup_list'].add(newItem);
+                  }
+                });
+                _saveConfig();
+                Navigator.pop(ctx);
+                _showFeedback("Success", "Payment setup configuration updated.");
+              }, 
+              child: const Text("SAVE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPayStatCard(String label, String value, {bool isSelected = false, Color? valueColor}) {
+    return InkWell(
+      onTap: () => setState(() => _payFilter = label),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected ? Border.all(color: AdminTheme.royalBlue, width: 2) : Border.all(color: Colors.grey.shade100),
+          boxShadow: AdminTheme.softShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: isSelected ? AdminTheme.royalBlue : Colors.grey, letterSpacing: 0.8)),
+            const SizedBox(height: 12),
+            Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: valueColor ?? AdminTheme.darkNavy)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddEditPaymentMethodDialog(int? index) {
+    final bool isEditing = index != null;
+    final Map<String, dynamic> data = isEditing ? _configState['payment_methods'][index] : {};
+    
+    final nameCtrl = TextEditingController(text: data['name'] ?? '');
+    final gatewayCtrl = TextEditingController(text: data['gateway'] ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Icon(isEditing ? Icons.edit_note_rounded : Icons.add_circle_outline_rounded, color: AdminTheme.royalBlue),
+            const SizedBox(width: 12),
+            Text(isEditing ? "Edit Payment Method" : "Add Payment Method", style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Method Name", hintText: "e.g. Cash, Fonepay")),
+            const SizedBox(height: 16),
+            TextField(controller: gatewayCtrl, decoration: const InputDecoration(labelText: "Gateway / Provider", hintText: "e.g. E-Sewa, None")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.royalBlue),
+            onPressed: () {
+              if (nameCtrl.text.isEmpty) return;
+              setState(() {
+                final newItem = {
+                  'name': nameCtrl.text.trim(),
+                  'gateway': gatewayCtrl.text.trim(),
+                  'icon': data['icon'] ?? Icons.payment_rounded,
+                  'status': data['status'] ?? 'Active',
+                };
+                if (isEditing) {
+                  _configState['payment_methods'][index] = newItem;
+                } else {
+                  _configState['payment_methods'].add(newItem);
+                }
+              });
+              _saveConfig();
+              Navigator.pop(ctx);
+              _showFeedback("Success", "Payment method saved.");
+            }, 
+            child: const Text("SAVE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 12. SHIPPING MODULE ---
+  Widget _buildShippingModule() {
+    final List allItems = List.from(_configState['shipping_methods'] ?? []);
+    
+    // Stats
+    final total = allItems.length;
+    final active = allItems.where((i) => i['status'] == 'Active').length;
+    final inactive = allItems.where((i) => i['status'] != 'Active').length;
+
+    final filtered = allItems.where((i) {
+      bool matchesSearch = i['name'].toString().toLowerCase().contains(_shipSearchQuery.toLowerCase());
+      bool matchesFilter = true;
+      if (_shipFilter == "ACTIVE") matchesFilter = i['status'] == 'Active';
+      else if (_shipFilter == "INACTIVE") matchesFilter = i['status'] != 'Active';
+      
+      return matchesSearch && matchesFilter;
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Stats Row
+        Wrap(
+          spacing: 24,
+          runSpacing: 16,
+          children: [
+            _buildShipStatCard("TOTAL", total.toString(), isSelected: _shipFilter == "TOTAL"),
+            _buildShipStatCard("ACTIVE", active.toString(), valueColor: Colors.green, isSelected: _shipFilter == "ACTIVE"),
+            _buildShipStatCard("INACTIVE", inactive.toString(), valueColor: Colors.orange, isSelected: _shipFilter == "INACTIVE"),
+          ],
+        ),
+        const SizedBox(height: 40),
+
+        // Search & Add Bar
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: AdminTheme.softShadow),
+                child: TextField(
+                  onChanged: (v) => setState(() => _shipSearchQuery = v),
+                  decoration: const InputDecoration(hintText: "Search shipping methods...", border: InputBorder.none, icon: Icon(Icons.search)),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton.icon(
+              onPressed: () => _showAddEditShippingMethodDialog(null), 
+              icon: const Icon(Icons.add), 
+              label: const Text("ADD SHIPPING"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AdminTheme.royalBlue,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 32),
+
+        // Table Layout
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white, 
+            borderRadius: BorderRadius.circular(24), 
+            boxShadow: AdminTheme.softShadow,
+            border: Border.all(color: Colors.grey.shade100),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                decoration: BoxDecoration(
+                  color: AdminTheme.royalBlue.withValues(alpha: 0.05),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: const Row(
+                  children: [
+                    SizedBox(width: 50, child: Text("SL.", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                    Expanded(flex: 3, child: Text("METHOD NAME", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                    Expanded(flex: 2, child: Text("COST", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                    Expanded(flex: 2, child: Text("EST. TIME", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+                    Expanded(flex: 2, child: Center(child: Text("STATUS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)))),
+                    SizedBox(width: 120, child: Center(child: Text("ACTIONS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)))),
+                  ],
+                ),
+              ),
+              if (filtered.isEmpty)
+                const Padding(padding: EdgeInsets.all(64), child: Text("No shipping methods found.", style: TextStyle(color: Colors.grey)))
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filtered.length,
+                  separatorBuilder: (ctx, i) => Divider(height: 1, color: Colors.grey.shade50),
+                  itemBuilder: (ctx, i) {
+                    final item = filtered[i];
+                    int realIdx = _configState['shipping_methods'].indexOf(item);
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                      child: Row(
+                        children: [
+                          SizedBox(width: 50, child: Text("${i + 1}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13))),
+                          Expanded(
+                            flex: 3, 
+                            child: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AdminTheme.darkNavy))
+                          ),
+                          Expanded(
+                            flex: 2, 
+                            child: Text(
+                              item['cost'], 
+                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AdminTheme.royalBlue)
+                            )
+                          ),
+                          Expanded(
+                            flex: 2, 
+                            child: Text(
+                              item['time'], 
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)
+                            )
+                          ),
+                          Expanded(
+                            flex: 2, 
+                            child: Center(
+                              child: Transform.scale(
+                                scale: 0.8,
+                                child: Switch.adaptive(
+                                  value: item['status'] == 'Active',
+                                  onChanged: (v) {
+                                    setState(() => item['status'] = v ? 'Active' : 'Inactive');
+                                    _saveConfig();
+                                  },
+                                  activeTrackColor: AdminTheme.royalBlue.withValues(alpha: 0.3),
+                                  activeColor: AdminTheme.royalBlue,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 120,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit_note_rounded, color: Colors.blue, size: 24), 
+                                  onPressed: () => _showAddEditShippingMethodDialog(realIdx)
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 22), 
+                                  onPressed: () => _showConfirmDeleteDialog("Shipping Method", realIdx, "shipping_methods")
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildShipStatCard(String label, String value, {bool isSelected = false, Color? valueColor}) {
+    return InkWell(
+      onTap: () => setState(() => _shipFilter = label),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected ? Border.all(color: AdminTheme.royalBlue, width: 2) : Border.all(color: Colors.grey.shade100),
+          boxShadow: AdminTheme.softShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: isSelected ? AdminTheme.royalBlue : Colors.grey, letterSpacing: 0.8)),
+            const SizedBox(height: 12),
+            Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: valueColor ?? AdminTheme.darkNavy)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddEditShippingMethodDialog(int? index) {
+    final bool isEditing = index != null;
+    final Map<String, dynamic> data = isEditing ? _configState['shipping_methods'][index] : {};
+    
+    final nameCtrl = TextEditingController(text: data['name'] ?? '');
+    final costCtrl = TextEditingController(text: data['cost'] ?? '');
+    final timeCtrl = TextEditingController(text: data['time'] ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Icon(isEditing ? Icons.edit_note_rounded : Icons.add_circle_outline_rounded, color: AdminTheme.royalBlue),
+            const SizedBox(width: 12),
+            Text(isEditing ? "Edit Shipping Method" : "Add Shipping Method", style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Method Name", hintText: "e.g. Standard Delivery")),
+            const SizedBox(height: 16),
+            TextField(controller: costCtrl, decoration: const InputDecoration(labelText: "Cost", hintText: "e.g. NPR 50")),
+            const SizedBox(height: 16),
+            TextField(controller: timeCtrl, decoration: const InputDecoration(labelText: "Est. Time", hintText: "e.g. 30-45 min")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCEL")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AdminTheme.royalBlue),
+            onPressed: () {
+              if (nameCtrl.text.isEmpty) return;
+              setState(() {
+                final newItem = {
+                  'name': nameCtrl.text.trim(),
+                  'cost': costCtrl.text.trim(),
+                  'time': timeCtrl.text.trim(),
+                  'status': data['status'] ?? 'Active',
+                };
+                if (isEditing) {
+                  _configState['shipping_methods'][index] = newItem;
+                } else {
+                  _configState['shipping_methods'].add(newItem);
+                }
+              });
+              _saveConfig();
+              Navigator.pop(ctx);
+              _showFeedback("Success", "Shipping method saved.");
+            }, 
+            child: const Text("SAVE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+          ),
+        ],
+      ),
     );
   }
 
