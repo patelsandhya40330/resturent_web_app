@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui_web' as ui_web;
-import 'package:web/web.dart' as web;
 import 'models.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
@@ -14,43 +12,12 @@ class ARViewPage extends StatefulWidget {
 }
 
 class _ARViewPageState extends State<ARViewPage> {
-  late String _viewId;
   bool _showDirectAR = false;
   Timer? _loadTimer;
 
   @override
   void initState() {
     super.initState();
-    _viewId = 'model-viewer-${widget.product.title.hashCode}';
-    
-    // Register the model-viewer element directly in the browser
-    // This bypasses the Flutter package for better stability on localhost
-    ui_web.platformViewRegistry.registerViewFactory(
-      _viewId,
-      (int viewId) {
-        final element = web.document.createElement('model-viewer') as web.HTMLElement;
-        
-        // Android / Web GLB
-        if (widget.product.modelUrl != null) {
-          element.setAttribute('src', widget.product.modelUrl!);
-        }
-        
-        // iOS USDZ (Critical for AR Quick Look on Apple devices)
-        if (widget.product.iosModelUrl != null) {
-          element.setAttribute('ios-src', widget.product.iosModelUrl!);
-        }
-
-        element.setAttribute('ar', '');
-        element.setAttribute('ar-modes', 'webxr scene-viewer quick-look');
-        element.setAttribute('camera-controls', '');
-        element.setAttribute('auto-rotate', '');
-        element.setAttribute('shadow-intensity', '1');
-        element.style.width = '100%';
-        element.style.height = '100%';
-        element.style.backgroundColor = 'transparent';
-        return element;
-      },
-    );
 
     _loadTimer = Timer(const Duration(seconds: 8), () {
       if (mounted) setState(() => _showDirectAR = true);
@@ -153,9 +120,20 @@ class _ARViewPageState extends State<ARViewPage> {
             ),
           ),
 
-          // The Direct HTML View
-          if (widget.product.modelUrl != null)
-            HtmlElementView(viewType: _viewId),
+          // Web-only 3D preview is disabled in the native app build.
+          // The app uses native AR launch flows instead.
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                widget.product.modelUrl != null || widget.product.iosModelUrl != null
+                    ? "Preparing AR experience..."
+                    : "No AR model available for this product.",
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.black54, fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
 
           // Bottom Action Bar
           Positioned(

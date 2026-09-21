@@ -17,7 +17,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> with Sing
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -30,16 +30,18 @@ class _TableManagementScreenState extends State<TableManagementScreen> with Sing
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Table Management", style: TextStyle(fontSize: 18)),
+        title: const Text("Location Management", style: TextStyle(fontSize: 18)),
         bottom: TabBar(
           controller: _tabController,
           labelColor: WaiterProTheme.royalBlue,
           indicatorColor: WaiterProTheme.royalBlue,
           labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+          isScrollable: true,
           tabs: const [
             Tab(text: "Indoor"),
             Tab(text: "Roof"),
             Tab(text: "VIP"),
+            Tab(text: "ROOMS"),
           ],
         ),
       ),
@@ -49,7 +51,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> with Sing
             padding: const EdgeInsets.all(12.0),
             child: TextField(
               decoration: InputDecoration(
-                hintText: "Search Table...",
+                hintText: "Search Table/Room...",
                 hintStyle: const TextStyle(fontSize: 13),
                 prefixIcon: const Icon(Icons.search, size: 18),
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
@@ -69,6 +71,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> with Sing
                 _buildTableGrid(100),
                 _buildTableGrid(200),
                 _buildTableGrid(300),
+                _buildTableGrid(500, isRoom: true),
               ],
             ),
           ),
@@ -111,7 +114,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> with Sing
     );
   }
 
-  Widget _buildTableGrid(int offset) {
+  Widget _buildTableGrid(int offset, {bool isRoom = false}) {
     return ValueListenableBuilder<Map<int, String>>(
       valueListenable: ShopManager.instance.tableStatuses,
       builder: (context, statuses, child) {
@@ -131,6 +134,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> with Sing
           itemCount: 12,
           itemBuilder: (context, index) {
             final tableId = offset + index + 1;
+            final String label = isRoom ? "R-$tableId" : "T-$tableId";
             String status = statuses[tableId] ?? "Available";
             bool isOccupied = status == "Dining";
 
@@ -139,21 +143,25 @@ class _TableManagementScreenState extends State<TableManagementScreen> with Sing
                 if (isOccupied) {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => RunningOrderSummaryScreen(tableId: "T-$tableId")),
+                    MaterialPageRoute(builder: (context) => RunningOrderSummaryScreen(tableId: label)),
                   );
                 } else {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => DigitalMenuScreen(tableId: "T-$tableId")),
+                    MaterialPageRoute(builder: (context) => DigitalMenuScreen(tableId: label)),
                   );
                 }
               },
               child: Container(
                 decoration: BoxDecoration(
-                  color: isOccupied ? WaiterProTheme.royalBlue.withValues(alpha: 0.05) : Colors.white,
+                  color: isOccupied 
+                      ? (isRoom ? Colors.orange.withValues(alpha: 0.05) : WaiterProTheme.royalBlue.withValues(alpha: 0.05)) 
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isOccupied ? WaiterProTheme.royalBlue : const Color(0xFFE2E8F0),
+                    color: isOccupied 
+                        ? (isRoom ? Colors.orange : WaiterProTheme.royalBlue) 
+                        : const Color(0xFFE2E8F0),
                     width: 1.2,
                   ),
                   boxShadow: WaiterProTheme.softShadow,
@@ -161,20 +169,27 @@ class _TableManagementScreenState extends State<TableManagementScreen> with Sing
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    Icon(isRoom ? Icons.room_service_outlined : Icons.table_bar_outlined, 
+                        size: 20, 
+                        color: isOccupied ? (isRoom ? Colors.orange : WaiterProTheme.royalBlue) : Colors.grey[300]),
+                    const SizedBox(height: 8),
                     Text(
-                      "T-$tableId",
+                      label,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: isOccupied ? WaiterProTheme.royalBlue : WaiterProTheme.darkNavy,
+                        color: isOccupied 
+                            ? (isRoom ? Colors.orange : WaiterProTheme.royalBlue) 
+                            : WaiterProTheme.darkNavy,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      isOccupied ? "Occupied" : status,
+                      isOccupied ? (isRoom ? "STAYING" : "Occupied") : status,
                       style: TextStyle(
-                        fontSize: 9,
-                        color: isOccupied ? WaiterProTheme.royalBlue : Colors.grey,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                        color: isOccupied ? (isRoom ? Colors.orange : WaiterProTheme.royalBlue) : Colors.grey,
                       ),
                     ),
                   ],

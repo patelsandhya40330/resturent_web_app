@@ -9,16 +9,20 @@ import 'super_admin_module/master_hub.dart';
 
 import 'services/staff_gateway.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:web/web.dart' as web; // Import for SessionStorage access
 import 'splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+
+import 'services/language_service.dart';
 
 void main() async {
   // 1. Remove the '#' from URLs (e.g. startupsgo.tech/#/ -> startupsgo.tech/)
   usePathUrlStrategy();
   
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Localization
+  await LanguageService().initialize();
 
   try {
     await Firebase.initializeApp(
@@ -50,10 +54,12 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initApp() async {
     try {
       String domain = Uri.base.host;
-      if (domain == "127.0.0.1") domain = "localhost";
       
       // Remove 'www.' for consistent matching
       if (domain.startsWith('www.')) domain = domain.substring(4);
+
+      // Native apps have no browser host; use the default tenant domain.
+      if (domain.isEmpty) domain = "startupsgo.tech";
 
       debugPrint("INIT: Detecting environment for domain: $domain");
 
@@ -66,17 +72,12 @@ class _MyAppState extends State<MyApp> {
         tableParam = fragUri.queryParameters['table'];
       }
 
-      // 2. RESCUE: Check Session Storage
-      tableParam ??= web.window.sessionStorage.getItem('rescue_table_id');
-
       if (tableParam != null) {
         final int? tId = int.tryParse(tableParam);
         if (tId != null) {
           ShopManager.instance.selectedTableId.value = tId;
           ShopManager.instance.isQrLaunch.value = true;
-          // LOCK IT IN SESSION STORAGE
-          web.window.sessionStorage.setItem('rescue_table_id', tId.toString());
-          debugPrint("QR SYSTEM: Table $tId locked in session storage.");
+          debugPrint("QR SYSTEM: Table $tId received from URL.");
         }
       }
 
@@ -123,7 +124,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, tenant, child) {
             // BYPASS FOR LOCALHOST TESTING:
             // Agar aap PC par hain aur database set nahi hai, toh seedha Dashboard dikhao
-            if (Uri.base.host == "localhost" && tenant == null) {
+            if (isLocalDevelopmentHost(Uri.base.host) && tenant == null) {
                return _buildMainApp(null, isBypass: true);
             }
 

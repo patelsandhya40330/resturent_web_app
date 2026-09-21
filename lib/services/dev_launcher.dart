@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../super_admin_module/master_hub.dart';
+import '../admin_pro/admin_hub.dart';
 import 'staff_gateway.dart';
 import 'tenant_service.dart';
 
@@ -63,7 +64,7 @@ class DevLauncherScreen extends StatelessWidget {
                   subtitle: "Manage catalog, staff, and branding.",
                   icon: Icons.admin_panel_settings_rounded,
                   color: const Color(0xFFFF5C00),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StaffGateway())),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AdminHub())),
                 ),
                 
                 const SizedBox(height: 20),

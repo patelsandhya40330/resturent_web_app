@@ -91,13 +91,14 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
         ? p['image_url'] 
         : _getCategoryImage(category);
 
-    // Mock stock data for design consistency
-    final int stock = 40; 
+    // Mock stock data
+    final int stock = p['stock_quantity'] ?? 40; 
+    final bool isAvailable = p['is_available'] ?? true;
     final bool isLowStock = stock <= 10;
+    final bool isRoomOnly = p['featured_section'] == 'room_service';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
-      height: 140,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -108,103 +109,138 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
             offset: const Offset(0, 10),
           )
         ],
+        border: isRoomOnly ? Border.all(color: Colors.orange.withValues(alpha: 0.2), width: 1.5) : null,
       ),
-      child: Stack(
+      child: Column(
         children: [
-          Row(
+          Stack(
             children: [
-              // 1. Fixed Image Section
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.network(
-                    image,
-                    width: 110,
-                    height: 110,
-                    fit: BoxFit.cover,
-                    errorBuilder: (c, e, s) => Container(
-                      width: 110, height: 110, 
-                      color: Colors.grey[100],
-                      child: const Icon(Icons.fastfood, color: Colors.grey),
-                    ),
-                  ),
-                ),
-              ),
-
-              // 2. Details Section
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF1E293B)),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        description,
-                        style: TextStyle(fontSize: 11, color: Colors.grey[500], height: 1.3),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const Spacer(),
-                      Text(
-                        "NPR $price",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900, 
-                          fontSize: 18, 
-                          color: Color(0xFF2563EB), // Reference Blue
+              Row(
+                children: [
+                  // 1. Fixed Image Section
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.network(
+                        image,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => Container(
+                          width: 100, height: 100, 
+                          color: Colors.grey[100],
+                          child: const Icon(Icons.fastfood, color: Colors.grey),
                         ),
                       ),
-                    ],
+                    ),
                   ),
+
+                  // 2. Details Section
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Color(0xFF1E293B)),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (isRoomOnly) ...[
+                                const SizedBox(width: 8),
+                                const Icon(Icons.room_service, size: 14, color: Colors.orange),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            description,
+                            style: TextStyle(fontSize: 10, color: Colors.grey[500], height: 1.2),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "NPR $price",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900, 
+                                  fontSize: 16, 
+                                  color: Color(0xFF2563EB), 
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isLowStock ? Colors.red.withValues(alpha: 0.1) : Colors.green.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  "Qty: $stock",
+                                  style: TextStyle(color: isLowStock ? Colors.red : Colors.green, fontSize: 9, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Status Badge
+              Positioned(
+                top: 12,
+                right: 12,
+                child: IconButton(
+                  onPressed: () => _showActionMenu(p),
+                  icon: const Icon(Icons.more_vert, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ),
             ],
           ),
-
-          // 3. Stock Badge (Top Right)
-          Positioned(
-            top: 16,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: isLowStock ? const Color(0xFFFFF7ED) : const Color(0xFFF0FDF4),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Text(
-                isLowStock ? "Low Stock : $stock" : "In Stock : $stock",
-                style: TextStyle(
-                  color: isLowStock ? const Color(0xFFEA580C) : const Color(0xFF16A34A),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+          const Divider(height: 1),
+          // Inline Controls Footer
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: [
+                const Icon(Icons.bolt, size: 14, color: Colors.amber),
+                const SizedBox(width: 4),
+                const Text("Instant Availability", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                const Spacer(),
+                Switch.adaptive(
+                  value: isAvailable,
+                  activeColor: AdminTheme.emeraldGreen,
+                  onChanged: (val) async {
+                    final tenant = TenantService().currentTenant.value;
+                    if (tenant != null) {
+                      setState(() {
+                        p['is_available'] = val;
+                      });
+                      await ApiService.updateProduct({
+                        'id': p['id'],
+                        'tenant_id': tenant.id,
+                        'is_available': val,
+                        'title': p['title'], // Basic fields to ensure update
+                        'price': p['price'],
+                        'category_id': p['category_id'],
+                      });
+                    }
+                  },
                 ),
-              ),
-            ),
-          ),
-
-          // 4. Action Button (Bottom Right)
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: InkWell(
-              onTap: () => _showActionMenu(p),
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2D3282), // Reference Dark Blue
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.shopping_basket_outlined, color: Colors.white, size: 18),
-              ),
+              ],
             ),
           ),
         ],
@@ -290,26 +326,26 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_editingProduct == null) ...[
-              const Text("Product Details", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              const Text("Product Details", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
               const SizedBox(height: 24),
             ],
             _buildTextField("Product Name", _titleController, hint: "e.g. Steam Chicken Momo"),
             const SizedBox(height: 16),
             
-            // Dynamic Category Dropdown
             const Text("Category", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
             const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade100)),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _selectedCategoryId,
-                  hint: const Text("Select Category", style: TextStyle(fontSize: 13)),
+                  hint: const Text("Select Category", style: TextStyle(fontSize: 13, color: Colors.grey)),
                   isExpanded: true,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
                   items: categories.map((c) => DropdownMenuItem(
                     value: c['id'].toString(),
-                    child: Text(c['title']),
+                    child: Text(c['title'], style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                   )).toList(),
                   onChanged: (val) => setState(() => _selectedCategoryId = val),
                 ),
@@ -320,7 +356,7 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
             Row(
               children: [
                 Expanded(child: _buildTextField("Base Price", _priceController, hint: "450")),
-                const SizedBox(width: 16),
+                const SizedBox(width: 24),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,24 +366,24 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
                       InkWell(
                         onTap: _pickImage,
                         child: Container(
-                          height: 54,
+                          height: 52,
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[200]!),
+                            border: Border.all(color: Colors.grey.shade100),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(_selectedImageBytes != null ? Icons.check_circle : Icons.upload_file, 
-                                   color: _selectedImageBytes != null ? Colors.green : AdminTheme.royalBlue, size: 20),
+                              Icon(_selectedImageBytes != null ? Icons.check_circle : Icons.file_upload_outlined, 
+                                   color: _selectedImageBytes != null ? Colors.green : AdminTheme.royalBlue, size: 18),
                               const SizedBox(width: 8),
                               Text(
                                 _selectedImageBytes != null ? "Image Selected" : "Upload Photo",
                                 style: TextStyle(
-                                  fontSize: 12, 
-                                  fontWeight: FontWeight.bold, 
-                                  color: _selectedImageBytes != null ? Colors.green : Colors.black87
+                                  fontSize: 13, 
+                                  fontWeight: FontWeight.w600, 
+                                  color: _selectedImageBytes != null ? Colors.green : AdminTheme.darkNavy
                                 ),
                               ),
                             ],
@@ -362,9 +398,20 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
             if (_selectedImageBytes != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.memory(_selectedImageBytes!, height: 100, width: double.infinity, fit: BoxFit.cover),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.memory(_selectedImageBytes!, height: 120, width: double.infinity, fit: BoxFit.cover),
+                    ),
+                    Positioned(
+                      top: 8, right: 8,
+                      child: IconButton(
+                        onPressed: () => setState(() => _selectedImageBytes = null),
+                        icon: const Icon(Icons.cancel, color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             const SizedBox(height: 16),
@@ -373,28 +420,37 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
             _buildTextField("Description", _descriptionController, hint: "Enter short product details..."),
             const SizedBox(height: 16),
             
-            // Home Section Picker
             const Text("Home Page Section", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
             const SizedBox(height: 12),
             Wrap(
               spacing: 12,
+              runSpacing: 12,
               children: [
                 _buildSectionChip("none", "None"),
                 _buildSectionChip("just_for_you", "Just For You"),
                 _buildSectionChip("trending", "Trending"),
                 _buildSectionChip("popular", "Popular"),
+                _buildSectionChip("room_service", "Room Only"),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
             
             if (_isSubmitting)
               const Center(child: CircularProgressIndicator())
             else
               ElevatedButton(
                 onPressed: _editingProduct != null ? _submitEdit : _submitProduct,
-                style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 54)),
-                child: Text(_editingProduct != null ? "UPDATE PRODUCT DETAILS" : "ADD PRODUCT TO DATABASE"),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 56),
+                  backgroundColor: AdminTheme.royalBlue,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(
+                  _editingProduct != null ? "UPDATE PRODUCT DETAILS" : "ADD PRODUCT TO DATABASE",
+                  style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1),
+                ),
               ),
+            const SizedBox(height: 32),
           ],
         );
       },

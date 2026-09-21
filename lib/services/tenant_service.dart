@@ -1,6 +1,25 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 
+bool isLocalDevelopmentHost(String host) {
+  final normalizedHost = host.trim().toLowerCase();
+  if (normalizedHost.isEmpty || normalizedHost == 'localhost' || normalizedHost == '::1') {
+    return true;
+  }
+
+  final octets = normalizedHost.split('.').map(int.tryParse).toList();
+  if (octets.length != 4 || octets.any((octet) => octet == null || octet < 0 || octet > 255)) {
+    return false;
+  }
+
+  final first = octets[0]!;
+  final second = octets[1]!;
+  return first == 127 ||
+      first == 10 ||
+      (first == 172 && second >= 16 && second <= 31) ||
+      (first == 192 && second == 168);
+}
+
 class Tenant {
   final String id;
   final String name;
@@ -73,7 +92,7 @@ class TenantService extends ChangeNotifier {
     
     // DEBUG BYPASS FOR LOCALHOST TESTING
     String domainToFetch = domain;
-    if (domain == "localhost" || domain == "127.0.0.1") {
+    if (isLocalDevelopmentHost(domain)) {
       domainToFetch = "startupsgo.tech"; // Use your live domain data for testing
     }
 
@@ -93,9 +112,9 @@ class TenantService extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> login(String email, String pin) async {
-    String domain = Uri.base.host == "127.0.0.1" ? "localhost" : Uri.base.host;
+    String domain = Uri.base.host;
     
-    if (domain == "localhost") domain = "startupsgo.tech"; // Force domain for localhost login
+    if (isLocalDevelopmentHost(domain)) domain = "startupsgo.tech"; // Force demo domain for local login
 
     final result = await ApiService.staffLogin(domain: domain, email: email, pin: pin);
     

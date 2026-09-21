@@ -43,12 +43,12 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
 
     return Column(
       children: [
-        _buildSearchAndFilterHeader(),
+        _buildFilterToolbar(),
         Expanded(
           child: _isLoading 
               ? const Center(child: CircularProgressIndicator())
               : filtered.isEmpty 
-                  ? const Center(child: Text("No orders found."))
+                  ? _buildEmptyState()
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
                       itemCount: filtered.length,
@@ -61,48 +61,37 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
     );
   }
 
-  Widget _buildSearchAndFilterHeader() {
+  Widget _buildFilterToolbar() {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
-          TextField(
-            onChanged: (v) {
-              // Implementation of local search if needed
-            },
-            decoration: InputDecoration(
-              hintText: "Search Order ID, Table...",
-              prefixIcon: const Icon(Icons.search, size: 20),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: AdminTheme.softShadow),
+            child: TextField(
+              onChanged: (v) {},
+              decoration: const InputDecoration(hintText: "Search Order ID, Table...", prefixIcon: Icon(Icons.search), border: InputBorder.none),
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: ["All", "Pending", "Approved", "Preparing", "Ready", "Completed", "Cancel"].map((f) {
-                      bool isSel = _currentFilter == f;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(f, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                          selected: isSel,
-                          onSelected: (v) => setState(() => _currentFilter = f),
-                          selectedColor: AdminTheme.royalBlue,
-                          labelStyle: TextStyle(color: isSel ? Colors.white : Colors.black87),
-                        ),
-                      );
-                    }).toList(),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ["All", "Pending", "Approved", "Preparing", "Ready", "Completed", "Cancel"].map((f) {
+                bool isSel = _currentFilter == f;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(f, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    selected: isSel,
+                    onSelected: (v) => setState(() => _currentFilter = f),
+                    selectedColor: AdminTheme.royalBlue,
+                    labelStyle: TextStyle(color: isSel ? Colors.white : Colors.black87),
                   ),
-                ),
-              ),
-              IconButton(onPressed: _loadOrders, icon: const Icon(Icons.refresh, color: AdminTheme.royalBlue)),
-            ],
+                );
+              }).toList(),
+            ),
           ),
         ],
       ),
@@ -113,103 +102,125 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
     String id = "ORD-${order['id']}";
     String status = order['status'] ?? 'Pending';
     Color statusColor = _getStatusColor(status);
-
+    String customer = order['customer_name'] ?? "Guest";
+    String location = order['table_number']?.toString() ?? "N/A";
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: AdminTheme.softShadow,
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            title: Row(
-              children: [
-                Text(id, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
-                const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                  child: Text(status.toUpperCase(), style: TextStyle(color: statusColor, fontSize: 8, fontWeight: FontWeight.w900)),
-                ),
-              ],
-            ),
-            subtitle: Text("Table ${order['table_number']} • ${order['created_at']}", style: const TextStyle(fontSize: 11, color: Colors.grey)),
-            trailing: PopupMenuButton<String>(
-              onSelected: (val) {
-                if (val == "Delete") {
-                  _deleteOrder(order['id'].toString());
-                } else {
-                  _updateStatus(order['id'], val);
-                }
-              },
-              itemBuilder: (ctx) => [
-                "Pending", "Approved", "Preparing", "Ready", "Completed", "Cancel"
-              ].map((s) => PopupMenuItem(value: s, child: Text(s))).toList()..add(
-                const PopupMenuItem(value: "Delete", child: Text("Delete", style: TextStyle(color: Colors.red)))
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: AdminTheme.royalBlue.withValues(alpha: 0.1),
+                child: const Icon(Icons.receipt_long, color: AdminTheme.royalBlue, size: 20),
               ),
-              icon: const Icon(Icons.more_vert, size: 20),
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(id, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                    Text(customer, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+              _buildStatusBadge(status, statusColor),
+            ],
           ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(20),
+          const Divider(height: 32),
+          Row(
+            children: [
+              _buildInfoItem(Icons.table_restaurant, "Location", "Table $location"),
+              _buildInfoItem(Icons.access_time, "Time", order['created_at'] ?? "Just now"),
+              _buildInfoItem(Icons.payments_outlined, "Payment", order['payment_status'] ?? "Unpaid"),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(12)),
             child: Column(
               children: [
                 ...(order['items'] as List<dynamic>? ?? []).map((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: _buildItemSummaryRow(item['name'] ?? 'Item', "x${item['quantity'] ?? '1'}"),
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Text("${item['quantity']}x", style: const TextStyle(fontWeight: FontWeight.w900, color: AdminTheme.royalBlue, fontSize: 12)),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(item['name'] ?? 'Item', style: const TextStyle(fontSize: 12))),
+                      Text("NPR ${item['price']}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 )),
-                const SizedBox(height: 20),
+                const Divider(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Total Bill:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    Text("NPR ${order['total_amount']}", style: const TextStyle(fontWeight: FontWeight.w900, color: AdminTheme.royalBlue, fontSize: 14)),
+                    const Text("TOTAL BILL", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)),
+                    Text("NPR ${order['total_amount']}", style: const TextStyle(fontWeight: FontWeight.w900, color: AdminTheme.royalBlue, fontSize: 16)),
                   ],
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(child: OutlinedButton(onPressed: () => _showOrderDetails(order), child: const Text("VIEW DETAILS"))),
+              const SizedBox(width: 12),
+              IconButton(onPressed: () => _deleteOrder(order['id'].toString()), icon: const Icon(Icons.delete_outline, color: Colors.red)),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Future<void> _updateStatus(dynamic orderId, String newStatus) async {
-    final result = await ApiService.updateOrderStatus(int.parse(orderId.toString()), newStatus);
-    if (result['success'] == true) {
-      _loadOrders();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Status updated."), backgroundColor: Colors.green));
-    } else {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed: ${result['message']}"), backgroundColor: Colors.red));
-    }
+  Widget _buildInfoItem(IconData icon, String label, String value) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [Icon(icon, size: 12, color: Colors.grey), const SizedBox(width: 4), Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10))]),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AdminTheme.darkNavy)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+      child: Text(label.toUpperCase(), style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w900)),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return const Center(child: Text("No orders found matching criteria."));
+  }
+
+  void _showOrderDetails(Map<String, dynamic> order) {
+    showModalBottomSheet(context: context, builder: (ctx) => Container(padding: const EdgeInsets.all(24), child: Column(children: [Text("Order #ORD-${order['id']}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), const Divider(), Expanded(child: ListView(children: [ListTile(title: const Text("Customer"), trailing: Text(order['customer_name'] ?? "Guest")), ListTile(title: const Text("Table"), trailing: Text(order['table_number'].toString())), ListTile(title: const Text("Status"), trailing: Text(order['status'] ?? "Pending"))]))])));
   }
 
   Future<void> _deleteOrder(String id) async {
     final tenant = TenantService().currentTenant.value;
     if (tenant == null) return;
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Delete Order?"),
-        content: const Text("This will permanently remove the order record."),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("CANCEL")),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("DELETE", style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
-
+    final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: const Text("Delete Order?"), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("CANCEL")), TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("DELETE", style: TextStyle(color: Colors.red)))]));
     if (confirm == true) {
-      final res = await ApiService.deleteOrder(tenant.id, id);
-      if (res['success'] == true) {
-        _loadOrders();
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Order deleted.")));
-      }
+      await ApiService.deleteOrder(tenant.id, id);
+      _loadOrders();
     }
   }
 
@@ -223,15 +234,5 @@ class _OrderManagementScreenState extends State<OrderManagementScreen> {
       case 'Cancel': return Colors.red;
       default: return Colors.grey;
     }
-  }
-
-  Widget _buildItemSummaryRow(String name, String qty) {
-    return Row(
-      children: [
-        Text(qty, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: AdminTheme.royalBlue)),
-        const SizedBox(width: 12),
-        Expanded(child: Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
-      ],
-    );
   }
 }

@@ -193,7 +193,10 @@ class _HomePageState extends State<HomePage> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: _buildPromoBanner(),
+                child: GestureDetector(
+                  onTap: () => ShopManager.instance.navigateToCategory(null),
+                  child: _buildPromoBanner(),
+                ),
               ),
             ),
             SliverToBoxAdapter(child: _buildNowPlayingCard()),
@@ -252,7 +255,14 @@ class _HomePageState extends State<HomePage> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(20),
-                child: _buildRewardsCard(),
+                child: InkWell(
+                  onTap: () {
+                    // Navigate to Rewards Page if needed, or switch to Profile which often contains rewards
+                    ShopManager.instance.currentTabIndex.value = 4;
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: _buildRewardsCard(),
+                ),
               ),
             ),
 

@@ -10,11 +10,16 @@ class StaffGateway extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLocalPreview = isLocalDevelopmentHost(Uri.base.host);
+
     return ValueListenableBuilder<Staff?>(
       valueListenable: TenantService().currentStaff,
       builder: (context, staff, child) {
-        // 1. Always show Login Screen if not authenticated
         if (staff == null) {
+          if (isLocalPreview) {
+            return const AdminHub();
+          }
+
           return const AdminLoginScreen(roleHint: "Staff");
         }
 

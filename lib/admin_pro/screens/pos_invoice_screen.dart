@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/language_service.dart';
 import '../admin_theme.dart';
 
 class POSInvoiceScreen extends StatefulWidget {
@@ -10,27 +11,32 @@ class POSInvoiceScreen extends StatefulWidget {
 }
 
 class _POSInvoiceScreenState extends State<POSInvoiceScreen> {
-  int _selectedTable = 101;
+  String _selectedTable = "T-101";
   String _paymentMethod = "Cash";
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildTableSelectionHeader(),
-          const SizedBox(height: 24),
-          _buildLiveCartPreview(),
-          const SizedBox(height: 24),
-          _buildPaymentSelection(),
-          const SizedBox(height: 32),
-          _buildInvoiceSummary(),
-          const SizedBox(height: 40),
-          _buildActionButtons(),
-        ],
-      ),
+    return ValueListenableBuilder<String>(
+      valueListenable: LanguageService().currentLanguageCode,
+      builder: (context, _, __) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTableSelectionHeader(),
+              const SizedBox(height: 24),
+              _buildLiveCartPreview(),
+              const SizedBox(height: 24),
+              _buildPaymentSelection(),
+              const SizedBox(height: 32),
+              _buildInvoiceSummary(),
+              const SizedBox(height: 40),
+              _buildActionButtons(),
+            ],
+          ),
+        );
+      }
     );
   }
 
@@ -45,11 +51,11 @@ class _POSInvoiceScreenState extends State<POSInvoiceScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Active Table", style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
-              Text("Select for Billing", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(t('pos.active_selection'), style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+              Text(t('pos.select_table'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
           Container(
@@ -58,17 +64,19 @@ class _POSInvoiceScreenState extends State<POSInvoiceScreen> {
               color: AdminTheme.royalBlue.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: DropdownButton<int>(
+            child: DropdownButton<String>(
               value: _selectedTable,
               underline: const SizedBox(),
               icon: const Icon(Icons.keyboard_arrow_down, color: AdminTheme.royalBlue),
-              items: [101, 102, 105, 201].map((int value) {
-                return DropdownMenuItem<int>(
+              items: ["T-101", "T-102", "R-501", "R-502"].map((String value) {
+                return DropdownMenuItem<String>(
                   value: value,
-                  child: Text("Table T-$value", style: const TextStyle(fontWeight: FontWeight.bold, color: AdminTheme.royalBlue)),
+                  child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: AdminTheme.royalBlue)),
                 );
               }).toList(),
-              onChanged: (val) => setState(() => _selectedTable = val!),
+              onChanged: (val) {
+                if (val != null) setState(() => _selectedTable = val);
+              },
             ),
           ),
         ],
@@ -80,7 +88,7 @@ class _POSInvoiceScreenState extends State<POSInvoiceScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Current Items", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(t('pos.current_items'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
@@ -106,7 +114,7 @@ class _POSInvoiceScreenState extends State<POSInvoiceScreen> {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-      subtitle: Text("Quantity: $qty", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      subtitle: Text("${t('form.quantity')}: $qty", style: const TextStyle(fontSize: 12, color: Colors.grey)),
       trailing: Text("NPR $price", style: const TextStyle(fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
     );
   }
@@ -115,7 +123,7 @@ class _POSInvoiceScreenState extends State<POSInvoiceScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Payment Method", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(t('pos.payment_method'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         Row(
           children: ["Cash", "Fonepay", "Card"].map((method) {
@@ -158,7 +166,7 @@ class _POSInvoiceScreenState extends State<POSInvoiceScreen> {
       ),
       child: Column(
         children: [
-          _buildSummaryRow("Subtotal", "NPR 1,400", Colors.white70),
+          _buildSummaryRow(t('pos.subtotal'), "NPR 1,400", Colors.white70),
           const SizedBox(height: 12),
           _buildSummaryRow("Service Charge (10%)", "NPR 140", Colors.white70),
           const SizedBox(height: 12),
@@ -167,7 +175,7 @@ class _POSInvoiceScreenState extends State<POSInvoiceScreen> {
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Divider(color: Colors.white10),
           ),
-          _buildSummaryRow("TOTAL AMOUNT", "NPR 1,740", Colors.white, isBold: true),
+          _buildSummaryRow(t('pos.total_amount'), "NPR 1,740", Colors.white, isBold: true),
         ],
       ),
     );
@@ -190,7 +198,7 @@ class _POSInvoiceScreenState extends State<POSInvoiceScreen> {
           child: OutlinedButton.icon(
             onPressed: () {},
             icon: const Icon(Icons.print, size: 18),
-            label: const Text("PRINT KOT"),
+            label: Text(t('pos.print_kot')),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               side: const BorderSide(color: AdminTheme.royalBlue),
@@ -204,7 +212,7 @@ class _POSInvoiceScreenState extends State<POSInvoiceScreen> {
           child: ElevatedButton.icon(
             onPressed: () {},
             icon: const Icon(Icons.receipt_long, size: 18),
-            label: const Text("GENERATE INVOICE"),
+            label: Text(t('pos.generate_invoice')),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               backgroundColor: AdminTheme.emeraldGreen,

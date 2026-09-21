@@ -125,10 +125,12 @@ class _MysteryBoxPageState extends State<MysteryBoxPage> {
   }
 
   Widget _buildLockedStateUI(bool isUnlocked) {
+    final canTap = isUnlocked && !_isProcessing;
+
     return Column(
       children: [
         GestureDetector(
-          onTap: isUnlocked ? _handleOpenBox : null,
+          onTap: canTap ? _handleOpenBox : null,
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 60),
@@ -137,37 +139,47 @@ class _MysteryBoxPageState extends State<MysteryBoxPage> {
               borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(
-                  color: isUnlocked ? Colors.amber.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.05),
+                  color: canTap ? Colors.amber.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.05),
                   blurRadius: 30,
                   spreadRadius: 5,
                 )
               ],
               border: Border.all(
-                color: isUnlocked ? Colors.amber.withValues(alpha: 0.5) : Colors.grey[200]!,
+                color: canTap ? Colors.amber.withValues(alpha: 0.5) : Colors.grey[200]!,
                 width: 2,
               ),
             ),
             child: Column(
               children: [
-                Icon(
-                  Icons.card_giftcard_rounded,
-                  size: 120,
-                  color: isUnlocked ? Colors.amber : Colors.grey[300],
-                ),
+                if (_isProcessing)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 18),
+                    child: CircularProgressIndicator(color: Color(0xFFFF5C00)),
+                  )
+                else
+                  Icon(
+                    Icons.card_giftcard_rounded,
+                    size: 120,
+                    color: canTap ? Colors.amber : Colors.grey[300],
+                  ),
                 const SizedBox(height: 30),
                 Text(
-                  isUnlocked ? "Tap to Unbox!" : "Locked",
+                  _isProcessing
+                      ? "Opening..."
+                      : (isUnlocked ? "Tap to Unbox!" : "Locked"),
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
-                    color: isUnlocked ? const Color(0xFFFF5C00) : Colors.grey,
+                    color: canTap ? const Color(0xFFFF5C00) : Colors.grey,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  isUnlocked 
-                    ? "Your surprise reward is waiting inside." 
-                    : "Connect to ChiyaBreak's WiFi between 8am-8pm to unlock.",
+                  _isProcessing
+                      ? "Please wait while we reveal your prize."
+                      : (isUnlocked
+                          ? "Your surprise reward is waiting inside."
+                          : "Connect to ChiyaBreak's WiFi between 8am-8pm to unlock."),
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.black54, fontSize: 13),
                 ),

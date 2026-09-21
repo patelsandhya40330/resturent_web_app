@@ -128,7 +128,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 ),
 
                 // --- DEVELOPMENT BYPASS TOOL ---
-                if (Uri.base.host == "localhost" || Uri.base.host == "127.0.0.1") ...[
+                if (isLocalDevelopmentHost(Uri.base.host)) ...[
                   const SizedBox(height: 32),
                   const Divider(),
                   const SizedBox(height: 20),

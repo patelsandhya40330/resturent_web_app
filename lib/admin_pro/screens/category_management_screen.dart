@@ -47,7 +47,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("All Categories", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text("All Categories Hierarchy", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 IconButton(
                   onPressed: () {
                     final tenant = TenantService().currentTenant.value;
@@ -61,50 +61,98 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             if (categories.isEmpty)
               const Center(child: Padding(padding: EdgeInsets.all(40), child: Text("No categories found.")))
             else
-              GridView.builder(
+              ReorderableListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 1.1,
-                ),
                 itemCount: categories.length,
+                onReorder: (oldIndex, newIndex) {
+                  setState(() {
+                    if (newIndex > oldIndex) {
+                      newIndex -= 1;
+                    }
+                    final item = categories.removeAt(oldIndex);
+                    categories.insert(newIndex, item);
+                    
+                    // Bulk update ranks sequentially
+                    for (int i = 0; i < categories.length; i++) {
+                      categories[i]['rank'] = i + 1;
+                      final tenant = TenantService().currentTenant.value;
+                      if (tenant != null) {
+                        ApiService.updateCategory(
+                          tenantId: tenant.id,
+                          categoryId: categories[i]['id'].toString(),
+                          title: categories[i]['title'],
+                          rank: i + 1,
+                          icon: categories[i]['icon'] ?? 'restaurant_menu',
+                        );
+                      }
+                    }
+                  });
+                },
                 itemBuilder: (context, index) {
                   final cat = categories[index];
+                  final bool isAvailable = cat['is_available'] ?? true;
                   return Container(
-                    padding: const EdgeInsets.all(16),
+                    key: ValueKey(cat['id']),
+                    margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                       boxShadow: AdminTheme.softShadow,
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            IconButton(
-                              onPressed: () => _showEditCategoryModal(cat),
-                              icon: const Icon(Icons.edit_outlined, color: AdminTheme.royalBlue, size: 18),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: AdminTheme.royalBlue.withValues(alpha: 0.1), shape: BoxShape.circle),
+                        child: Icon(_getIconData(cat['icon']), color: AdminTheme.royalBlue, size: 20),
+                      ),
+                      title: Text(cat['title'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: Row(
+                        children: [
+                          Text("Seq: ${cat['rank'] ?? '0'}", style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: (isAvailable ? AdminTheme.emeraldGreen : Colors.red).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
                             ),
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(color: AdminTheme.royalBlue.withValues(alpha: 0.1), shape: BoxShape.circle),
-                              child: Icon(_getIconData(cat['icon']), color: AdminTheme.royalBlue, size: 20),
-                            ),
-                            IconButton(
-                              onPressed: () => _deleteCategory(cat['id'].toString()),
-                              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(cat['title'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center),
-                        Text("Rank: ${cat['rank'] ?? '0'}", style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
-                      ],
+                            child: Text(isAvailable ? "ACTIVE" : "INACTIVE", style: TextStyle(color: isAvailable ? AdminTheme.emeraldGreen : Colors.red, fontSize: 8, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Switch.adaptive(
+                            value: isAvailable,
+                            activeColor: AdminTheme.emeraldGreen,
+                            onChanged: (val) async {
+                              final tenant = TenantService().currentTenant.value;
+                              if (tenant != null) {
+                                setState(() => cat['is_available'] = val);
+                                await ApiService.updateCategory(
+                                  tenantId: tenant.id,
+                                  categoryId: cat['id'].toString(),
+                                  title: cat['title'],
+                                  rank: cat['rank'] ?? 1,
+                                  icon: cat['icon'] ?? 'restaurant_menu',
+                                );
+                              }
+                            },
+                          ),
+                          IconButton(
+                            onPressed: () => _showEditCategoryModal(cat),
+                            icon: const Icon(Icons.edit_outlined, color: AdminTheme.royalBlue, size: 18),
+                          ),
+                          IconButton(
+                            onPressed: () => _deleteCategory(cat['id'].toString()),
+                            icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                          ),
+                          const Icon(Icons.drag_indicator, color: Colors.grey, size: 20),
+                          const SizedBox(width: 8),
+                        ],
+                      ),
                     ),
                   );
                 },

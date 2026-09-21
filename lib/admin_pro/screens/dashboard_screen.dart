@@ -4,32 +4,58 @@ import '../../services/api_service.dart';
 import '../../cart_manager.dart';
 import '../admin_theme.dart';
 
-class DashboardScreen extends StatelessWidget {
+import '../../services/language_service.dart';
+
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildUserInfoHeader(),
-          const SizedBox(height: 24),
-          _buildSubscriptionSummaryCard(),
-          const SizedBox(height: 24),
-          _buildQuickActionRow(),
-          const SizedBox(height: 24),
-          _buildWalletCard(),
-          const SizedBox(height: 32),
-          _buildKitchenAlertsWidget(),
-          const SizedBox(height: 32),
-          _buildActivitySection(),
-          const SizedBox(height: 32),
-          _buildMonthlyGrowthCard(),
-        ],
-      ),
+    return ValueListenableBuilder<String>(
+      valueListenable: LanguageService().currentLanguageCode,
+      builder: (context, _, __) {
+        return Scrollbar(
+          controller: _scrollController,
+          thumbVisibility: true,
+          trackVisibility: true,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildUserInfoHeader(),
+                const SizedBox(height: 24),
+                _buildSubscriptionSummaryCard(),
+                const SizedBox(height: 24),
+                _buildQuickActionRow(),
+                const SizedBox(height: 24),
+                _buildWalletCard(),
+                const SizedBox(height: 32),
+                _buildKitchenAlertsWidget(),
+                const SizedBox(height: 32),
+                _buildActivitySection(),
+                const SizedBox(height: 32),
+                _buildMonthlyGrowthCard(),
+              ],
+            ),
+          ),
+        );
+      }
     );
   }
 
@@ -276,7 +302,7 @@ class DashboardScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text("Recent Kitchen Alerts", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                const Text("Kitchen Alerts", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(color: Colors.red[100], borderRadius: BorderRadius.circular(10)),

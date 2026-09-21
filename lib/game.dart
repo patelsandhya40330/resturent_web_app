@@ -3,6 +3,7 @@ import 'dart:math';
 
 class GamePage extends StatefulWidget {
   final bool isTeamMode;
+
   const GamePage({super.key, this.isTeamMode = false});
 
   @override
@@ -17,6 +18,7 @@ class _GamePageState extends State<GamePage> {
   final Random random = Random();
 
   void moveBurger() {
+
     setState(() {
       score++;
       if (widget.isTeamMode) teamScore++;
@@ -32,7 +34,10 @@ class _GamePageState extends State<GamePage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFF5C00),
         elevation: 0,
-        title: Text(widget.isTeamMode ? "Team: Burger Catcher" : "Burger Catcher", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+            widget.isTeamMode ? "Team: Burger Catcher" : "Burger Catcher",
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -48,12 +53,16 @@ class _GamePageState extends State<GamePage> {
               children: [
                 Text(
                   "Your Score: $score",
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFFFF5C00)),
+                  style: const TextStyle(fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFF5C00)),
                 ),
                 if (widget.isTeamMode)
                   Text(
                     "Team Total: $teamScore",
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+                    style: const TextStyle(fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green),
                   ),
               ],
             ),

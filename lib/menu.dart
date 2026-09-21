@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'cart_manager.dart';
 import 'app_data.dart';
 import 'product_card.dart';
 import 'search_delegate.dart';
@@ -16,6 +17,15 @@ class MenuPage extends StatefulWidget {
 class _MenuPageState extends State<MenuPage> {
   String _selectedCategory = 'All';
   String _selectedQuickToggle = '✨ AI Picks';
+
+  @override
+  void initState() {
+    super.initState();
+    // Sync with activeCategory from ShopManager
+    if (ShopManager.instance.activeCategory.value != null) {
+      _selectedCategory = ShopManager.instance.activeCategory.value!;
+    }
+  }
 
   final List<String> _quickToggles = [
     '✨ AI Picks', '⚡ Fast Order', '🔥 Popular', '🌱 Healthy', '😋 Sweet Craving',
@@ -63,9 +73,19 @@ class _MenuPageState extends State<MenuPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<List<Map<String, dynamic>>>(
-      valueListenable: TenantService().products,
-      builder: (context, dbProducts, child) {
+    return ValueListenableBuilder<String?>(
+      valueListenable: ShopManager.instance.activeCategory,
+      builder: (context, activeCat, child) {
+        // Update local state if the global activeCategory changes while we are on this page
+        if (activeCat != null && activeCat != _selectedCategory) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _selectedCategory = activeCat);
+          });
+        }
+        
+        return ValueListenableBuilder<List<Map<String, dynamic>>>(
+          valueListenable: TenantService().products,
+          builder: (context, dbProducts, child) {
         return ValueListenableBuilder<List<Map<String, dynamic>>>(
           valueListenable: TenantService().categories,
           builder: (context, dbCategories, child) {
@@ -99,11 +119,11 @@ class _MenuPageState extends State<MenuPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Column(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("Our Menu", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-                              Text("Smart AI Recommendations", style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)),
+                              const Text("Our Menu", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+                              Text(activeCat != null ? "Filtering by $activeCat" : "Smart AI Recommendations", style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)),
                             ],
                           ),
                           _buildSearchBtn(),
@@ -163,6 +183,8 @@ class _MenuPageState extends State<MenuPage> {
       );
     },
   );
+},
+);
 }
 
   Widget _buildSearchBtn() {
@@ -271,7 +293,13 @@ class _MenuPageState extends State<MenuPage> {
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
               label: Text(cat), selected: isSelected,
-              onSelected: (val) => setState(() => _selectedCategory = cat),
+              onSelected: (val) {
+                setState(() => _selectedCategory = cat);
+                // If user manually changes, clear the global override to avoid loop or confusion
+                if (ShopManager.instance.activeCategory.value != cat) {
+                  ShopManager.instance.activeCategory.value = null;
+                }
+              },
               selectedColor: const Color(0xFFFF5C00), backgroundColor: Colors.white,
               labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontWeight: FontWeight.bold),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: isSelected ? const Color(0xFFFF5C00) : Colors.grey[200]!)),
