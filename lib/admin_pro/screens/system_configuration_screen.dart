@@ -636,24 +636,24 @@ class _SystemConfigurationScreenState extends State<SystemConfigurationScreen> w
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Setting Name")),
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Setting Name", hintText: "e.g. Printer Address")),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: selectedType,
                   items: ['text', 'number', 'toggle'].map((t) => DropdownMenuItem(value: t, child: Text(t.toUpperCase()))).toList(),
                   onChanged: (v) => setModalState(() => selectedType = v!),
-                  decoration: const InputDecoration(labelText: "Data Type"),
+                  decoration: const InputDecoration(labelText: "Configuration Type"),
                 ),
                 const SizedBox(height: 16),
                 selectedType == 'toggle'
                   ? SwitchListTile.adaptive(
-                      title: const Text("Initial State"),
+                      title: const Text("Default State"),
                       value: toggleVal, 
                       onChanged: (v) => setModalState(() => toggleVal = v),
                     )
                   : TextField(
                       controller: valCtrl, 
-                      decoration: const InputDecoration(labelText: "Setting Value"),
+                      decoration: const InputDecoration(labelText: "Current Configuration"),
                       keyboardType: selectedType == 'number' ? TextInputType.number : TextInputType.text,
                     ),
               ],

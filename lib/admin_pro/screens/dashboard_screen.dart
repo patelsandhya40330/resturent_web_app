@@ -35,23 +35,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
             controller: _scrollController,
             physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildUserInfoHeader(),
-                const SizedBox(height: 24),
-                _buildSubscriptionSummaryCard(),
-                const SizedBox(height: 24),
-                _buildQuickActionRow(),
-                const SizedBox(height: 24),
-                _buildWalletCard(),
-                const SizedBox(height: 32),
-                _buildKitchenAlertsWidget(),
-                const SizedBox(height: 32),
-                _buildActivitySection(),
-                const SizedBox(height: 32),
-                _buildMonthlyGrowthCard(),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                bool isWide = constraints.maxWidth > 900;
+                
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildUserInfoHeader(),
+                    const SizedBox(height: 32),
+                    
+                    if (isWide) 
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 3, child: _buildPremiumStatsGrid()),
+                          const SizedBox(width: 24),
+                          Expanded(flex: 1, child: _buildSubscriptionSummaryCard()),
+                        ],
+                      )
+                    else ...[
+                      _buildSubscriptionSummaryCard(),
+                      const SizedBox(height: 24),
+                      _buildPremiumStatsGrid(),
+                    ],
+                    
+                    const SizedBox(height: 32),
+                    
+                    if (isWide)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 2, child: _buildSalesPerformanceChart()),
+                          const SizedBox(width: 24),
+                          Expanded(flex: 1, child: _buildPopularItemsSection()),
+                        ],
+                      )
+                    else ...[
+                      _buildSalesPerformanceChart(),
+                      const SizedBox(height: 32),
+                      _buildPopularItemsSection(),
+                    ],
+
+                    const SizedBox(height: 32),
+                    
+                    if (isWide)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(flex: 1, child: _buildLiveTableStatus()),
+                          const SizedBox(width: 24),
+                          Expanded(flex: 2, child: _buildRecentTransactions()),
+                        ],
+                      )
+                    else ...[
+                      _buildLiveTableStatus(),
+                      const SizedBox(height: 32),
+                      _buildRecentTransactions(),
+                    ],
+                    
+                    const SizedBox(height: 32),
+                    _buildKitchenAlertsWidget(),
+                  ],
+                );
+              }
             ),
           ),
         );
@@ -166,68 +213,250 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildQuickActionRow() {
-    return Row(
-      children: [
-        _buildTintedActionCard(
-          "Quick Tips",
-          "Increase your sales conversion rate",
-          AdminTheme.royalBlue,
-          Icons.tips_and_updates,
-        ),
-        const SizedBox(width: 16),
-        _buildTintedActionCard(
-          "Task Status",
-          "Weekly tasks completed 85%",
-          AdminTheme.emeraldGreen,
-          Icons.check_circle_outline,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTintedActionCard(String title, String subtitle, Color color, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: 0.1)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(icon, color: color, size: 20),
-                const Icon(Icons.play_circle_fill, color: Colors.white, size: 18),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.w500),
-              maxLines: 2,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWalletCard() {
+  Widget _buildPremiumStatsGrid() {
     return ValueListenableBuilder<List<Map<String, dynamic>>>(
       valueListenable: ShopManager.instance.allHistoricalBills,
       builder: (context, bills, child) {
         double totalRevenue = 0;
+        int completedOrders = 0;
         for (var bill in bills) {
           totalRevenue += double.tryParse(bill['total'].replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
+          if (bill['status'] == 'Paid' || bill['status'] == 'Complete') completedOrders++;
         }
+        double avgOrder = bills.isEmpty ? 0 : totalRevenue / bills.length;
 
+        return GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 2.2,
+          children: [
+            _buildStatMetricCard("Total Revenue", "NPR ${totalRevenue.toStringAsFixed(0)}", "+12.5%", Icons.payments_rounded, AdminTheme.royalBlue),
+            _buildStatMetricCard("Total Orders", bills.length.toString(), "+8.2%", Icons.shopping_bag_rounded, AdminTheme.emeraldGreen),
+            _buildStatMetricCard("Avg. Check", "NPR ${avgOrder.toStringAsFixed(0)}", "-2.4%", Icons.analytics_rounded, Colors.orange),
+            _buildStatMetricCard("Active Customers", "42", "+18%", Icons.people_rounded, Colors.purple),
+          ],
+        );
+      }
+    );
+  }
+
+  Widget _buildStatMetricCard(String title, String value, String growth, IconData icon, Color color) {
+    bool isPositive = growth.startsWith('+');
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AdminTheme.softShadow,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(title, style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: (isPositive ? Colors.green : Colors.red).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              growth,
+              style: TextStyle(color: isPositive ? Colors.green : Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSalesPerformanceChart() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AdminTheme.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Sales Performance", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
+              DropdownButton<String>(
+                value: "Weekly",
+                underline: const SizedBox(),
+                items: ["Daily", "Weekly", "Monthly"].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 12)))).toList(),
+                onChanged: (v) {},
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            height: 200,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(7, (i) {
+                final double val = [0.4, 0.7, 0.5, 0.9, 0.6, 0.8, 0.4][i];
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 160 * val,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [AdminTheme.royalBlue, AdminTheme.royalBlue.withValues(alpha: 0.3)],
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(["M", "T", "W", "T", "F", "S", "S"][i], style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ],
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPopularItemsSection() {
+    final items = [
+      {'name': 'Chicken MoMo', 'orders': '124', 'revenue': 'NPR 18,600', 'img': Icons.restaurant},
+      {'name': 'Cold Coffee', 'orders': '85', 'revenue': 'NPR 12,750', 'img': Icons.local_cafe},
+      {'name': 'Veg Burger', 'orders': '62', 'revenue': 'NPR 9,300', 'img': Icons.lunch_dining},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AdminTheme.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Popular Items", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
+          const SizedBox(height: 24),
+          ...items.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),
+                  child: Icon(item['img'] as IconData, color: AdminTheme.royalBlue, size: 20),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text("${item['orders']} orders today", style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                    ],
+                  ),
+                ),
+                Text(item['revenue'] as String, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: AdminTheme.emeraldGreen)),
+              ],
+            ),
+          )).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLiveTableStatus() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AdminTheme.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Live Table Status", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
+              Container(
+                width: 8, height: 8,
+                decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              _buildTableMiniStat("8", "Occupied", Colors.red),
+              const SizedBox(width: 16),
+              _buildTableMiniStat("12", "Available", Colors.green),
+              const SizedBox(width: 16),
+              _buildTableMiniStat("4", "Reserved", Colors.orange),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: List.generate(12, (i) => Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: (i < 4 ? Colors.red : (i < 9 ? Colors.green : Colors.orange)).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: (i < 4 ? Colors.red : (i < 9 ? Colors.green : Colors.orange)).withValues(alpha: 0.3)),
+              ),
+              child: Center(child: Text("T${i+1}", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: i < 4 ? Colors.red : (i < 9 ? Colors.green : Colors.orange)))),
+            )),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableMiniStat(String count, String label, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(count, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: color)),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _buildRecentTransactions() {
+    return ValueListenableBuilder<List<Map<String, dynamic>>>(
+      valueListenable: ShopManager.instance.allHistoricalBills,
+      builder: (context, bills, child) {
+        final recent = bills.reversed.take(5).toList();
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -236,55 +465,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
             boxShadow: AdminTheme.softShadow,
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: AdminTheme.royalBlue.withValues(alpha: 0.1), shape: BoxShape.circle),
-                    child: const Icon(Icons.account_balance_wallet, color: AdminTheme.royalBlue, size: 20),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              const Text("Recent Transactions", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AdminTheme.darkNavy)),
+              const SizedBox(height: 24),
+              if (recent.isEmpty)
+                const Center(child: Padding(padding: EdgeInsets.all(32), child: Text("No transactions yet", style: TextStyle(color: Colors.grey))))
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: recent.length,
+                  separatorBuilder: (ctx, i) => const Divider(height: 24),
+                  itemBuilder: (ctx, i) {
+                    final b = recent[i];
+                    return Row(
                       children: [
-                        const Text("Revenue Balance", style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
-                        Text("NPR ${totalRevenue.toStringAsFixed(0)}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                        CircleAvatar(
+                          radius: 18,
+                          backgroundColor: AdminTheme.royalBlue.withValues(alpha: 0.1),
+                          child: const Icon(Icons.receipt_long_rounded, color: AdminTheme.royalBlue, size: 18),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(b['customer'] ?? 'Walk-in Customer', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              Text(b['id'] ?? '#INV-000', style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(b['total'] ?? '0.00', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+                            Text(b['status'] ?? 'Paid', style: TextStyle(color: (b['status'] == 'Paid' || b['status'] == 'Complete') ? Colors.green : Colors.orange, fontSize: 9, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
                       ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, color: Colors.grey),
-                ],
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Divider(height: 1),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildSubWalletInfo("Monthly Target", "NPR 150K"),
-                  _buildSubWalletInfo("Total Orders", "${bills.length}"),
-                ],
-              ),
+                    );
+                  },
+                ),
             ],
           ),
         );
-      },
+      }
     );
   }
 
-  Widget _buildSubWalletInfo(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AdminTheme.darkNavy)),
-      ],
-    );
-  }
 
   Widget _buildKitchenAlertsWidget() {
     final tenant = TenantService().currentTenant.value;
@@ -343,114 +572,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         );
       }
-    );
-  }
-
-  Widget _buildActivitySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text("Activities this week", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
-            const Text("-7.6%", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Container(
-          height: 180,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: AdminTheme.softShadow,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildStatCol("136", "Avg. 26 per day"),
-                    const Icon(Icons.trending_down, color: Colors.red, size: 20),
-                  ],
-                ),
-                const Spacer(),
-                // Simple Line Chart Mock
-                _buildSimpleChart(),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCol(String main, String sub) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(main, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-        Text(sub, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-
-  Widget _buildSimpleChart() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: List.generate(7, (index) {
-        final double h = [40.0, 60.0, 30.0, 80.0, 50.0, 90.0, 45.0][index];
-        return Container(
-          width: 8,
-          height: h,
-          decoration: BoxDecoration(
-            color: index == 5 ? AdminTheme.royalBlue : AdminTheme.royalBlue.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildMonthlyGrowthCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AdminTheme.royalBlue,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text("Monthly Performance", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(20)),
-                child: const Text("+12.4%", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const Text("NPR 84,200", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
-          const Text("Projected growth for October", style: TextStyle(color: Colors.white60, fontSize: 11)),
-          const SizedBox(height: 24),
-          LinearProgressIndicator(
-            value: 0.76,
-            backgroundColor: Colors.white10,
-            color: AdminTheme.emeraldGreen,
-            minHeight: 8,
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ],
-      ),
     );
   }
 }
